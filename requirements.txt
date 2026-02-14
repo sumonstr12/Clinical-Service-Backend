@@ -1,2 +1,5 @@
 django
 djangorestframework
+django-extensions
+djangorestframework-simplejwt
+django-redis
