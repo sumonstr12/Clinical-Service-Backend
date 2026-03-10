@@ -106,7 +106,10 @@ class Patient(models.Model):
 class CareGiver(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     relationship = models.CharField(max_length=20)
+    
 
+
+ 
 class HealthCareProvider(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     specialization = models.CharField(max_length=200)
@@ -153,5 +156,7 @@ class WeightHistory(models.Model):
         return self.patient.user.full_name
 
 
+
+# Update later 
 class RegistrationQueue(models.Model):
     pass

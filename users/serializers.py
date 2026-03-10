@@ -177,6 +177,7 @@ class LoginSerializer(serializers.ModelSerializer):
           fields = [
                "id",
                "username",
+               "full_name",
                "email",
                "role",
                "is_first_login",

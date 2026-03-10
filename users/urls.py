@@ -14,6 +14,8 @@ urlpatterns = [
     path('update-profile', UserUpdateProfileView.as_view(), name='update-profile'),
     path('update-weight', PatientWeightUpdateView.as_view(), name="update-weight"),
     path('user-profile', UserProfileView.as_view(), name='user-profile'),
+
+    path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
 ]
 
 

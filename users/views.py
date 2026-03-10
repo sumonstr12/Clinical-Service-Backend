@@ -17,48 +17,108 @@ from django.contrib.auth import get_user_model, authenticate
 User = get_user_model()
 
 
+import random
+from django.core.cache import cache
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 class TempoDataStoredView(APIView):
-    def post(self, request, *args, **kwargs):
-        # serializer = RegistrationSerializer(data=request.data)
 
-        otp = str(random.randint(111111, 999999))
-        print(otp)
+    def post(self, request):
+
         email = request.data.get("email")
-        request.data['otp'] = otp
-    
-        # print(request.data)
+        username = request.data.get("username")
+        if not email:
+            return Response({
+                "status": False,
+                "message": "Email required !"
+            })
+        
+        if not username:
+            return Response({
+                "status": False,
+                "message": "Username required !"
+            })
+        
+        if User.objects.filter(email=email).exists():  
+            return Response({  
+                "status": False,
+                "message": "Email already exists"
+            }, status=status.HTTP_400_BAD_REQUEST)  
 
-        # Set Cache File With Otp
-        cache.set("user_data", request.data, timeout=1800)
+ 
+        if username and User.objects.filter(username=username).exists():  
+            return Response({  
+                "status": False,
+                "message": "Username already exists"
+            }, status=status.HTTP_400_BAD_REQUEST)  
 
 
-        # I will build this section later..
-        # send_mail(
-        #     subject="Your OTP Code........",
-        #     message=f"Your OTP code is {otp} .",
-        #     from_email="Clinical System<sumon@example.com>",
-        #     recipient_list=[email],
-        #     fail_silently=False
-        # )
+        if cache.get(f"otp_limit_{email}"):
+            return Response({
+                "status": False,
+                "message": "Please wait before requesting another OTP"
+            })
 
-        return Response({
-                "status": True,
-                "message" : "Otp sent successfully..",
-                "otp": otp # This is only for test purpose..Not for final Production
-            }, status=status.HTTP_200_OK)
+        otp = str(random.randint(100000, 999999))
+
+        data = request.data.copy()
+        data["otp"] = otp
+
+        
+        cache.set(f"user_data_{email}", data, timeout=300)
+
+        
+        cache.set(f"otp_limit_{email}", True, timeout=60)
+
+        # send email
+        # send_mail(...)
+
+        print(otp)
+
+        response =  Response({
+            "status": True,
+            "message": "OTP sent to your email",
+            "otp" : otp
+        })
+
+        response.set_cookie(
+                key="email",
+                value=email,
+                secure=False,
+                httponly=True,
+                max_age= 30 *24*60*60,
+                samesite="Lax"
+            )
+        
+        return response
 
 class UserRegistrationView(APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
-        temp_user = cache.get("user_data")
-        cache.delete('user_data')
-        # print(temp_user['otp'])
-        temp_otp = temp_user.get('otp') if temp_user else None
 
-        # print(temp_otp)
+        email = request.COOKIES.get("email")
+        # email = request.data.get("email")
+        print(f"email: {email}")
+        if not email:
+            return Response(
+                {"status": False, "message": "Session expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if temp_user['otp'] == request.data.get("otp"):
+        temp_user = cache.get(f"user_data_{email}")
+        print(f"Temp_user{temp_user}")
+        if not temp_user:
+            return Response(
+                {"status": False, "message": "OTP expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        temp_otp = temp_user.get("otp")
+        # print(temp_user)
+        if str(temp_otp) == str(request.data.get("otp")):
             serializer = RegistrationSerializer(data=temp_user)
 
             if serializer.is_valid():
@@ -66,9 +126,11 @@ class UserRegistrationView(APIView):
                     with transaction.atomic():
                         user = serializer.save()
 
+                    cache.delete(f"user_data_{email}")
+                    print("Done")
                     return Response(
-                        {   
-                            "status" : True,
+                        {
+                            "status": True,
                             "message": "Registration successful",
                             "user_id": user.id,
                             "username": user.username,
@@ -78,22 +140,66 @@ class UserRegistrationView(APIView):
                     )
 
                 except Exception as e:
+                    error_message = str(e)  
+
+                    if "email" in error_message.lower(): 
+                        message = "Email already exists"  
+                    elif "username" in error_message.lower():  
+                        message = "Username already exists"  
+                    else:
+                        message = error_message  
                     return Response(
-                        {
+                        {   
+                            "status" : False,
                             "error": "Registration failed",
-                            "details": str(e)
+                            "message": message
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
+        else:
+            
+            return Response(
+                {
+                    "status": False,
+                    "message": "Invalid OTP(B)."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class OtpResendView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Otp sent Failed."
+                }
+            )
+        temp_user = cache.get(f"user_data_{email}")
+
+        if not temp_user:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Register all the data again."
+                }
+            )
+
+        otp = str(random.randint(100000, 999999))
+        cache.delete(f'user_data_{email}')
+        temp_user['otp'] = otp
+        print(otp)
+        cache.set(f"user_data_{email}", temp_user, timeout=300)
 
         return Response(
             {
-                "status" : False,
-                "message" : "Invalid OTP."
-            },
-            status=status.HTTP_400_BAD_REQUEST
+                "status" : True,
+                "message" : "Otp sent successfully."
+            },status=status.HTTP_200_OK
         )
-    
+
 
 
 class UserLogInView(APIView):
@@ -102,23 +208,27 @@ class UserLogInView(APIView):
         username = request.data.get("username")
         password = request.data.get("password")
 
+        print(username, password)
         # email, phone, username can be used for authenticate but 
         # these should be hundle in frontend
         user = authenticate(username=username, password=password)
+        print(f"User: {user}")
 
         if user:
 
             role = LoginSerializer(user).data['role']
 
             is_first_login = LoginSerializer(user).data['is_first_login']
+            full_name = LoginSerializer(user).data['full_name']
 
 
             refresh = RefreshToken.for_user(user)
             response =  Response(
                 {
-                    "status" : "success",
+                    "status" : True,
                     "message" : "Log in successfull.",
                     "role" : role,
+                    "full_name" : full_name,
                     "is_first_login" : is_first_login,
                     "token" : str(refresh.access_token),
                     "refresh_token" : str(refresh)
@@ -150,16 +260,24 @@ class UserLogInView(APIView):
 class UserFirstLogInView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
+        user = request.user
+        if not user.is_first_login:
+            return Response(
+                {
+                    "status": False,
+                    "message" : "Already Recorded all the Information."
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = FirstLoginSerializer(
             data = request.data, context={"request" : request}
         )
-        print(serializer)
+        # print(serializer)
         if serializer.is_valid():
             serializer.save()
 
             return Response(
                 {
-                    "status" : "success",
+                    "status" : True,
                     "message": "First Login Profile Setup successfully."
                 }, status=status.HTTP_200_OK
             )

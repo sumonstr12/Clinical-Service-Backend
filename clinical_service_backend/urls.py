@@ -5,6 +5,7 @@ from django.urls import path, include
 api_urlpaterns = [
     path("", include("users.urls")),
     path("", include("health.urls")),
+    path("", include("appointment.urls")),
 ]
 
 urlpatterns = [
