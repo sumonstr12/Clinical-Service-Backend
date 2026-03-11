@@ -3,7 +3,14 @@ from rest_framework import serializers
 from .models import *
 from django.db import transaction
 
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
+
+
+
+
+# Registration serializers for Patient and HealthCare Provider
 class RegistrationSerializer(serializers.Serializer):
      # User
      username = serializers.CharField(max_length=20)
@@ -27,9 +34,6 @@ class RegistrationSerializer(serializers.Serializer):
      date_of_birth = serializers.DateField(required=False, allow_null=True)
      region = serializers.CharField(required=False, allow_blank=True, default="")
 
-     # Caregiver
-     # relationship = serializers.CharField(required=False)
-
      # HealthCareProvider
      specialization = serializers.CharField(required=False)
      qualification = serializers.CharField(required=False)
@@ -37,20 +41,6 @@ class RegistrationSerializer(serializers.Serializer):
      cv = serializers.FileField(required=False)
      license_count = serializers.IntegerField(required=False)
 
-
-     # class Meta:
-     #     model = User
-     #     # fields = [
-     #     #     'username',
-     #     #     'full_name',
-     #     #     'email',
-     #     #     'phone',
-     #     #     'role',
-     #     #     'validation',
-     #     #     'is_first_login',
-
-     #     # ]
-     #     fields = '__all__'
 
      def validate(self, data):
           role = data.get("role")
@@ -172,46 +162,44 @@ class RegistrationSerializer(serializers.Serializer):
 
 
 # Update Serializer for Caregiver Registration
+
+
 class CaregiverRegistrationSerializer(serializers.Serializer):
 
-    patient_email = serializers.EmailField()
-    username = serializers.CharField()
-    full_name = serializers.CharField()
-    email = serializers.EmailField()
-    phone = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-    role = serializers.CharField()
-    relationship = serializers.CharField()
+     patient_email = serializers.EmailField()
+     relationship = serializers.CharField()
 
-    def create(self, validated_data):
+     username = serializers.CharField()
+     full_name = serializers.CharField()
+     email = serializers.EmailField()
+     phone = serializers.CharField()
+     password = serializers.CharField(write_only=True)
 
-          patient_email = validated_data.pop('patient_email')
-          relationship = validated_data.pop('relationship')
+     def create(self, validated_data):
 
-          patient = Patient.objects.get(user__email=patient_email) 
-     
+          patient_email = validated_data.pop("patient_email")
+          relationship = validated_data.pop("relationship")
+
+          patient = Patient.objects.get(user__email=patient_email)
+
           user = User.objects.create_user(
-               username=validated_data['username'],
-               email=validated_data['email'],
-               password=validated_data['password']
+               email=validated_data["email"],
+               username=validated_data["username"],
+               full_name=validated_data["full_name"],
+               phone=validated_data["phone"],
+               password=validated_data["password"],
+               role=User.Role.CAREGIVER
           )
 
-          user.full_name = validated_data['full_name']
-          user.phone = validated_data['phone']
-          user.role = validated_data['role']
-          user.save()
-
-          # 3️⃣ Create caregiver profile
           caregiver = CareGiver.objects.create(
                user=user
           )
 
-          # 4️⃣ Create relationship (pending)
           CaregiverPatientRelationship.objects.create(
                patient=patient,
                caregiver=caregiver,
                relationship_type=relationship,
-               status='pending'
+               status="pending"
           )
 
           return caregiver

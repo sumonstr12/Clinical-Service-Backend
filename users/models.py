@@ -35,7 +35,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        ADMIN = "ADMIN", "Admin",
+        ADMIN = "ADMIN", "Admin"
         PATIENT = "PATIENT", "Patient"
         CAREGIVER = "CAREGIVER", "Caregiver"
         HEALTHCARE = "HEALTHCARE", "Healthcare"
@@ -56,7 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     validation = models.BooleanField(default=False)
     is_first_login = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
-    otp = models.CharField()
+    otp = models.CharField(max_length=6, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -178,6 +178,7 @@ class CaregiverVerification(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
+    verified_at = models.DateTimeField(null=True, blank=True)
 
 
 class HealthCareProvider(models.Model):

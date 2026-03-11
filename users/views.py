@@ -94,6 +94,8 @@ class TempoDataStoredView(APIView):
         
         return response
 
+
+
 class UserRegistrationView(APIView):
     permission_classes = []
 
@@ -165,6 +167,61 @@ class UserRegistrationView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class CaregiverRegistrationView(APIView):
+    def post(self, request):
+        patient_email = request.data.get("patient_email")
+
+        if not patient_email:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Patient Email Required!"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
+
+        if not patient:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Patient Not Found!"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = CaregiverRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    user = serializer.save()
+
+                    return Response(
+                        {
+                            "status" : True,
+                            "message" : "Caregiver Registration Successfull.Waiting for approval.!"
+                        }, status=status.HTTP_201_CREATED
+                    )
+
+            except Exception as e:
+                error_message = str(e)  
+
+                if "email" in error_message.lower(): 
+                    message = "Email already exists"  
+                elif "username" in error_message.lower():  
+                    message = "Username already exists"  
+                else:
+                    message = error_message  
+                return Response(
+                    {  
+                        "status" : False,
+                        "error": "Registration failed",
+                        "message": message
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
 
 
 class OtpResendView(APIView):
