@@ -171,6 +171,52 @@ class RegistrationSerializer(serializers.Serializer):
           return user
 
 
+# Update Serializer for Caregiver Registration
+class CaregiverRegistrationSerializer(serializers.Serializer):
+
+    patient_email = serializers.EmailField()
+    username = serializers.CharField()
+    full_name = serializers.CharField()
+    email = serializers.EmailField()
+    phone = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    role = serializers.CharField()
+    relationship = serializers.CharField()
+
+    def create(self, validated_data):
+
+          patient_email = validated_data.pop('patient_email')
+          relationship = validated_data.pop('relationship')
+
+          patient = Patient.objects.get(user__email=patient_email) 
+     
+          user = User.objects.create_user(
+               username=validated_data['username'],
+               email=validated_data['email'],
+               password=validated_data['password']
+          )
+
+          user.full_name = validated_data['full_name']
+          user.phone = validated_data['phone']
+          user.role = validated_data['role']
+          user.save()
+
+          # 3️⃣ Create caregiver profile
+          caregiver = CareGiver.objects.create(
+               user=user
+          )
+
+          # 4️⃣ Create relationship (pending)
+          CaregiverPatientRelationship.objects.create(
+               patient=patient,
+               caregiver=caregiver,
+               relationship_type=relationship,
+               status='pending'
+          )
+
+          return caregiver
+
+
 class LoginSerializer(serializers.ModelSerializer):
      class Meta:
           model = User
