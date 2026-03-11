@@ -3,6 +3,7 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from datetime import date
+import uuid
 
 
 # Create your models here.
@@ -105,11 +106,80 @@ class Patient(models.Model):
     
 class CareGiver(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    relationship = models.CharField(max_length=20)
     
 
+# Update Model-
+class CaregiverPatientRelationship(models.Model):
 
- 
+    RELATIONSHIP_CHOICES = [
+        ('father', 'Father'),
+        ('mother', 'Mother'),
+        ('son', 'Son'),
+        ('daughter', 'Daughter'),
+        ('wife', 'Wife'),
+        ('husband', 'Husband'),
+        ('friend', 'Friend'),
+        ('other', 'Other'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('rejected', 'Rejected'),
+    ]
+
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='caregiver_relations'
+    )
+
+    caregiver = models.ForeignKey(
+        CareGiver,
+        on_delete=models.CASCADE,
+        related_name='patient_relations'
+    )
+
+    relationship_type = models.CharField(
+        max_length=20,
+        choices=RELATIONSHIP_CHOICES
+    )
+
+    is_primary = models.BooleanField(default=False)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+
+    can_book_appointment = models.BooleanField(default=True)
+    can_view_medical_records = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['patient', 'caregiver']
+
+    def __str__(self):
+        return f"{self.caregiver.user.username} is {self.relationship_type} of {self.patient.user.username}"
+
+
+class CaregiverVerification(models.Model):
+    relationship = models.OneToOneField(
+        CaregiverPatientRelationship,
+        on_delete=models.CASCADE
+    )
+
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_used = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+
 class HealthCareProvider(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     specialization = models.CharField(max_length=200)

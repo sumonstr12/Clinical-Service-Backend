@@ -28,7 +28,7 @@ class RegistrationSerializer(serializers.Serializer):
      region = serializers.CharField(required=False, allow_blank=True, default="")
 
      # Caregiver
-     relationship = serializers.CharField(required=False)
+     # relationship = serializers.CharField(required=False)
 
      # HealthCareProvider
      specialization = serializers.CharField(required=False)
@@ -60,10 +60,10 @@ class RegistrationSerializer(serializers.Serializer):
                required_fields = [
                     
                ]
-          elif role == User.Role.CAREGIVER:
-                    required_fields = [
-                         'relationship'
-                    ]
+          # elif role == User.Role.CAREGIVER:
+          #           required_fields = [
+          #                'relationship'
+          #           ]
 
 
           elif role == User.Role.ADMIN:
@@ -125,22 +125,22 @@ class RegistrationSerializer(serializers.Serializer):
                
                
           
-          elif role == User.Role.CAREGIVER:
+          # elif role == User.Role.CAREGIVER:
 
-               user = User.objects.create_user(
-                    username = validated_data.pop("username"),
-                    full_name = validated_data.pop("full_name"),
-                    email = validated_data.pop("email"),
-                    password = validated_data.pop("password"),
-                    phone = validated_data.pop("phone"),
-                    role = role
-               )
+          #      user = User.objects.create_user(
+          #           username = validated_data.pop("username"),
+          #           full_name = validated_data.pop("full_name"),
+          #           email = validated_data.pop("email"),
+          #           password = validated_data.pop("password"),
+          #           phone = validated_data.pop("phone"),
+          #           role = role
+          #      )
 
 
-               CareGiver.objects.create(
-                    user=user,
-                    relationship=validated_data.pop("relationship")
-               )
+          #      CareGiver.objects.create(
+          #           user=user,
+          #           relationship=validated_data.pop("relationship")
+          #      )
           
           elif role == User.Role.ADMIN:
                pass
