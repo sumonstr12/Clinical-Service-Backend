@@ -16,6 +16,10 @@ urlpatterns = [
     path('update-weight', PatientWeightUpdateView.as_view(), name="update-weight"),
     path('user-profile', UserProfileView.as_view(), name='user-profile'),
 
+
+    path('sent-approve-request', CaregiverRequestApprovalView.as_view(), name='arrove-request'),
+    path('add-new-patient', AddNewPatientRelationView.as_view(), name='add-new-patient'),
+    path('verify-request/<uuid:token>/', ApproveCaregiverRequestView.as_view(), name='verify-request'),
     path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
 ]
 

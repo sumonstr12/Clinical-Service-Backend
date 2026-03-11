@@ -11,6 +11,10 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .permissions import *
+
+from django.utils import timezone
+
 from django.contrib.auth import get_user_model, authenticate
 # Create your views here.
 
@@ -223,6 +227,167 @@ class CaregiverRegistrationView(APIView):
                 )
 
 
+# Add extra patient relation with caregiver
+class AddNewPatientRelationView(APIView):
+    permission_classes=[IsCaregiver]
+    def post(self, request):
+        patient_email = request.data.get("patient_email")
+        
+        if not patient_email:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Email Field is required."
+                },status=status.HTTP_400_BAD_REQUEST
+            )
+
+        patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
+        print(patient)
+        if not patient:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Patient Not Found With this email."
+                },status=status.HTTP_400_BAD_REQUEST
+            )
+        
+
+        serializer = CaregiverPatientRelationshipSerializer(
+            data=request.data,
+            context={'request': request} 
+        )
+        
+        if serializer.is_valid():
+            relation = serializer.save()  
+            return Response({
+                "status": True,
+                "message": "Patient relationship request submitted successfully.",
+                "data": {
+                    "patient": relation.patient.user.email,
+                    "caregiver": relation.caregiver.user.email,
+                    "relationship_type": relation.relationship_type,
+                    "status": relation.status,
+                    "is_primary": relation.is_primary,
+                    "can_book_appointment": relation.can_book_appointment,
+                    "can_view_medical_records": relation.can_view_medical_records
+                }
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            "status": False,
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CaregiverRequestApprovalView(APIView):
+    permission_classes = [IsCaregiver]
+    def post(self, request):
+        patient_email = request.data.get("patient_email")
+
+        if not patient_email:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Email Field is required."
+                },status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
+        print(patient)
+        if not patient:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Patient Not Found With this email."
+                },status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(request.user)
+        caregiver = CareGiver.objects.get(user=request.user)
+        serializer = CaregiverRequestSerializer(
+            data=request.data,
+            context={"caregiver": caregiver}  
+        )
+
+        if serializer.is_valid():
+            verification = serializer.save()
+
+            # send email to patient
+            verification_link = f"http://localhost:8000/api/verify-request/{verification.token}/"
+            patient_email = verification.relationship.patient.user.email
+
+            print(verification.token)
+            print(patient_email)
+            # Send email Function -- (Build Later-)
+
+            # from django.core.mail import send_mail
+            # send_mail(
+            #     subject="Caregiver Approval Request",
+            #     message=f"Click to approve caregiver request: {verification_link}",
+            #     from_email="noreply@healthcare.com",
+            #     recipient_list=[patient_email],
+            # )
+
+            return Response(
+                {   
+                    "status" : True,
+                    "message": "Request sent to patient", 
+                    "verification_link": verification_link
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            {
+                "status" : False,
+                "message" : "Request sent failed.",
+                "errors" : serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+
+# approval view
+class ApproveCaregiverRequestView(APIView):
+
+    def get(self, request, token):
+        try:
+            verification = CaregiverVerification.objects.get(token=token)
+        except CaregiverVerification.DoesNotExist:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Token already used"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+        if verification.is_used:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Invalid token"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+        if verification.expires_at < timezone.now():
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Token expired"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        relationship = verification.relationship
+        relationship.status = "active"
+        relationship.save()
+
+        verification.is_used = True
+        verification.save()
+
+        return Response(
+            {
+                "status" : True,
+                "message" : "Request Approved. "
+            }, status=status.HTTP_200_OK
+        )
 
 class OtpResendView(APIView):
     def post(self, request):

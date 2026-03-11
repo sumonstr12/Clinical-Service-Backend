@@ -3,7 +3,11 @@ from rest_framework import serializers
 from .models import *
 from django.db import transaction
 
+from django.utils import timezone
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
+
 
 User = get_user_model()
 
@@ -205,6 +209,63 @@ class CaregiverRegistrationSerializer(serializers.Serializer):
           return caregiver
 
 
+
+
+# serializer for add new patient with caregiver relation
+class CaregiverPatientRelationshipSerializer(serializers.ModelSerializer):
+    patient_email = serializers.EmailField(write_only=True)
+    
+    class Meta:
+        model = CaregiverPatientRelationship
+        fields = [
+            "patient_email", 
+            "relationship_type",
+            "is_primary",
+            "can_book_appointment",
+            "can_view_medical_records",
+            "status",
+        ]
+        read_only_fields = ["status"] 
+
+    def create(self, validated_data):
+        patient_email = validated_data.pop("patient_email")
+        patient = Patient.objects.get(user__email=patient_email)
+        caregiver = CareGiver.objects.get(user=self.context['request'].user)
+        
+        
+        relation, created = CaregiverPatientRelationship.objects.update_or_create(
+            patient=patient,
+            caregiver=caregiver,
+            defaults=validated_data
+        )
+        return relation
+
+
+
+# serializer for request approval
+class CaregiverRequestSerializer(serializers.Serializer):
+    patient_email = serializers.EmailField()
+    
+
+    def create(self, validated_data):
+        patient_email = validated_data["patient_email"]
+        
+        patient = Patient.objects.get(user__email=patient_email)
+        caregiver = self.context["caregiver"]  
+
+        
+        relationship = CaregiverPatientRelationship.objects.get(
+            patient=patient,
+            caregiver=caregiver
+        )
+
+
+        verification = CaregiverVerification.objects.create(
+            relationship=relationship,
+            expires_at=timezone.now() + timedelta(hours=24)
+        )
+
+        return verification  
 class LoginSerializer(serializers.ModelSerializer):
      class Meta:
           model = User
