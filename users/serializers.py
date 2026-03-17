@@ -244,28 +244,27 @@ class CaregiverPatientRelationshipSerializer(serializers.ModelSerializer):
 
 # serializer for request approval
 class CaregiverRequestSerializer(serializers.Serializer):
-    patient_email = serializers.EmailField()
-    
+     patient_email = serializers.EmailField()
+     
 
-    def create(self, validated_data):
-        patient_email = validated_data["patient_email"]
-        
-        patient = Patient.objects.get(user__email=patient_email)
-        caregiver = self.context["caregiver"]  
+     def create(self, validated_data):
+          patient_email = validated_data["patient_email"]
+          
+          patient = Patient.objects.get(user__email=patient_email)
+          caregiver = self.context["caregiver"]  
 
-        
-        relationship = CaregiverPatientRelationship.objects.get(
-            patient=patient,
-            caregiver=caregiver
-        )
+          
+          relationship = CaregiverPatientRelationship.objects.get(
+               patient=patient,
+               caregiver=caregiver
+          )
 
+          verification = CaregiverVerification.objects.create(
+               relationship=relationship,
+               expires_at=timezone.now() + timedelta(hours=24)
+          )
 
-        verification = CaregiverVerification.objects.create(
-            relationship=relationship,
-            expires_at=timezone.now() + timedelta(hours=24)
-        )
-
-        return verification  
+          return verification  
 class LoginSerializer(serializers.ModelSerializer):
      class Meta:
           model = User

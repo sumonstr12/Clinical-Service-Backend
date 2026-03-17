@@ -293,7 +293,7 @@ class CaregiverRequestApprovalView(APIView):
             )
         
         patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
-        print(patient)
+        # print(patient)
         if not patient:
             return Response(
                 {
@@ -304,6 +304,29 @@ class CaregiverRequestApprovalView(APIView):
 
         print(request.user)
         caregiver = CareGiver.objects.get(user=request.user)
+        patient = Patient.objects.get(user__email = patient_email)
+
+        print(f"patient : {patient}")
+        try:
+            relationship = CaregiverPatientRelationship.objects.get(
+                caregiver=caregiver,
+                patient=patient
+            )
+        except CaregiverPatientRelationship.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Relationship does not exist"
+            })
+
+        if relationship.status == "active":
+            return Response(
+                {
+                    "status" : False,
+                    "message": "Patient ALready Approved the request."
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(relationship.status)
         serializer = CaregiverRequestSerializer(
             data=request.data,
             context={"caregiver": caregiver}  
