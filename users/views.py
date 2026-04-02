@@ -380,21 +380,21 @@ class ApproveCaregiverRequestView(APIView):
             return Response(
                 {
                     "status" : False,
-                    "message" : "Token already used"
+                    "message" : "Failed to Approved.Try again!"
                 }, status=status.HTTP_400_BAD_REQUEST
             )
         if verification.is_used:
             return Response(
                 {
                     "status" : False,
-                    "message" : "Invalid token"
+                    "message" : "Token Already Used."
                 }, status=status.HTTP_400_BAD_REQUEST
             )
         if verification.expires_at < timezone.now():
             return Response(
                 {
                     "status" : False,
-                    "message" : "Token expired"
+                    "message" : "Token expired.."
                 }, status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -408,7 +408,7 @@ class ApproveCaregiverRequestView(APIView):
         return Response(
             {
                 "status" : True,
-                "message" : "Request Approved. "
+                "message" : "Request Approved.. "
             }, status=status.HTTP_200_OK
         )
 
