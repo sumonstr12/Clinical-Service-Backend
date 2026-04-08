@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import *
 from django.conf import settings
+from django.utils import timezone
 
 
 User = settings.AUTH_USER_MODEL
@@ -13,6 +14,9 @@ class AvailabilitySlot(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     is_available = models.BooleanField(default=False)
+    max_visit_patient = models.IntegerField(default=0)
+    consume_slots = models.IntegerField(default=0)
+    appointment_date = models.DateField(default=timezone.now())
 
     def __str__(self):
         return f"Doctor Name : {self.provider.user.full_name}"

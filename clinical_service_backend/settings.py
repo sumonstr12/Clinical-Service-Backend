@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'users',
     'health',
     'appointment',
+    'custom_admin',
     
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
