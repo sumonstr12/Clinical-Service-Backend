@@ -65,3 +65,16 @@ class UserGroupAssignSerializer(serializers.ModelSerializer):
         groups = validated_data.pop('groups', [])
         instance.groups.set(groups)
         return instance
+    
+
+class LoginSerializer(serializers.ModelSerializer):
+     class Meta:
+          model = User
+          fields = [
+               "id",
+               "username",
+               "full_name",
+               "email",
+               "role",
+               "is_verified"
+          ]

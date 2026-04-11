@@ -442,5 +442,8 @@ class HealthCareProviderProfileViewSerializer(serializers.ModelSerializer):
           fields = '__all__'
 
 class CareGiverProfileViewSerializer(serializers.ModelSerializer):
-     pass
+     user = UserSerializer(read_only=True)
+     class Meta:
+          model = CareGiver
+          fields = '__all__'
 

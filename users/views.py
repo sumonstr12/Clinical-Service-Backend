@@ -466,6 +466,15 @@ class UserLogInView(APIView):
             is_first_login = LoginSerializer(user).data['is_first_login']
             full_name = LoginSerializer(user).data['full_name']
 
+            if role == "ADMIN":
+                return Response(
+                    {
+                        "status" : False,
+                        "message" : "User not found.",
+                    }
+                , status=status.HTTP_404_NOT_FOUND
+                )
+
 
             refresh = RefreshToken.for_user(user)
             response =  Response(
@@ -538,7 +547,6 @@ class UserLogOutView(APIView):
     def post(self, request):
         try:
             refreshToken = request.COOKIES.get("refresh_token")
-            print(refreshToken)
             if not refreshToken:
                 return Response(
                     {
@@ -547,7 +555,6 @@ class UserLogOutView(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST
                 )
             token = RefreshToken(refreshToken)
-            print(token)
             token.blacklist()
 
             return Response(
@@ -723,14 +730,14 @@ class UserUpdateProfileView(APIView):
             serializer.save()
             return Response(
                 {
-                    "success" : True,
+                    "status" : True,
                     "message" : "Profile Update successfull."
                 }, status=status.HTTP_200_OK
             )
         
         return Response(
             {
-                "success": False,
+                "status": False,
                 "message": "Profile Update Failed.",
                 "errors": serializer.errors
             },status=status.HTTP_400_BAD_REQUEST
@@ -773,6 +780,8 @@ class UserProfileView(APIView):
                 serializer = PatientProfileViewSerializer(user.patient)
             elif user.role == "CAREGIVER":
                 serializer = CareGiverProfileViewSerializer(user.caregiver)
+            elif user.role == "ADMIN":
+                serializer = UserSerializer(user)
             else:
                 serializer = HealthCareProviderProfileViewSerializer(user.healthcareprovider)
 

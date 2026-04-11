@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import *
 from django.contrib.auth.models import Group, Permission
-from django.contrib.auth import get_user_model 
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework_simplejwt.tokens import RefreshToken 
 
 
 
@@ -142,7 +143,7 @@ class PermissionListView(APIView):
     
 
 
-# ─── Group CRUD ────────────────────────────────────────────────────────
+
 class GroupListCreateView(APIView):
     permission_classes = [IsAdmin]
 
@@ -192,7 +193,7 @@ class GroupDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ─── User → Group Assign ───────────────────────────────────────────────
+
 class UserGroupAssignView(APIView):
     permission_classes = [IsAdmin]
 
@@ -221,3 +222,64 @@ class UserGroupAssignView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+
+
+
+class AdminLogInView(APIView):
+    permission_classes = []
+    def post(self, request, *args):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(username=username, password=password)
+        print(f"User: {user}")
+
+        if user:
+
+            role = LoginSerializer(user).data['role']
+
+            if role != "ADMIN":
+                return Response(
+                    {
+                        "status" : False,
+                        "message" : "Wrong Credentials.",
+                    }
+                , status=status.HTTP_400_BAD_REQUEST
+                )
+
+            full_name = LoginSerializer(user).data['full_name']
+
+
+            refresh = RefreshToken.for_user(user)
+            response =  Response(
+                {
+                    "status" : True,
+                    "message" : "Log in successfull.",
+                    "role" : role,
+                    "full_name" : full_name,
+                    "token" : str(refresh.access_token),
+                    "refresh_token" : str(refresh)
+                }, status=status.HTTP_200_OK
+            )
+
+            refresh_token = str(refresh)
+
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                secure=True,
+                httponly=True,
+                max_age= 30 *24*60*60,
+                samesite="strict"
+            )
+        
+            return response
+
+
+
+        return Response(
+            {
+                "status" : False,
+                "message" : "Password is incorrect."
+            }, status=status.HTTP_400_BAD_REQUEST
+        )
