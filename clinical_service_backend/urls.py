@@ -6,7 +6,7 @@ api_urlpaterns = [
     path("", include("users.urls")),
     path("", include("health.urls")),
     path("", include("appointment.urls")),
-    path("", include("custom_admin.urls")),
+    path("admin/", include("custom_admin.urls")),
 ]
 
 urlpatterns = [
