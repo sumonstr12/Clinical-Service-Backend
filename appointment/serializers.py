@@ -3,6 +3,13 @@ from rest_framework import serializers
 from users.serializers import *
 
 
+
+class AvailableDoctorSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = HealthCareProvider
+        fields = ['id', 'user', 'specialization', 'qualification']
+
 class AvailabilitySlotSerializers(serializers.ModelSerializer):
     class Meta:
         model = AvailabilitySlot

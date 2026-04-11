@@ -1,6 +1,9 @@
 
 from django.urls import path
 from .views import *
+from rest_framework_simplejwt.views import TokenRefreshView
+
+
 
 urlpatterns = [
     path('user-registration', TempoDataStoredView.as_view(), name='user-registration'),
@@ -21,6 +24,9 @@ urlpatterns = [
     path('add-new-patient', AddNewPatientRelationView.as_view(), name='add-new-patient'),
     path('verify-request/<uuid:token>/', ApproveCaregiverRequestView.as_view(), name='verify-request'),
     path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
+
+
+    path('token/refresh/', TokenRefreshView.as_view()),
 ]
 
 
