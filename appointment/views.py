@@ -93,6 +93,8 @@ class AvailableDoctorsView(APIView):
 
             )
 
+
+
 class AvailabilitySlotCreateView(APIView):
     permission_classes = [IsHealthCareProvider]
     # permission_classes = [IsCaregiver]

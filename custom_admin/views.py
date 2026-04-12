@@ -9,6 +9,7 @@ from .serializers import *
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken 
+from django.db.models import Q
 
 
 
@@ -283,3 +284,89 @@ class AdminLogInView(APIView):
                 "message" : "Password is incorrect."
             }, status=status.HTTP_400_BAD_REQUEST
         )
+    
+
+
+
+#  Doctor approved list view already in appoinment views.py file. If you want to see that then check appointment/views.py file.
+
+# Doctor list view those are not approved yet
+class NonApprovedDoctorListView(APIView):
+    # permission_classes = [IsAdmin]
+
+    def get(self, request):
+
+        try:
+
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
+            doctors = HealthCareProvider.objects.filter(
+                is_approved=False
+            ).select_related("user").order_by("id")
+            
+            specialization = request.GET.get("specialization")
+
+            if specialization:
+                doctors = doctors.filter(specialization=specialization)
+            
+            if search:
+
+                doctors = doctors.filter(
+
+                    Q(user__full_name__icontains=search) |
+                    Q(specialization__icontains=search) |
+                    Q(qualification__icontains=search)
+
+                )
+
+            total_count = doctors.count()
+
+            start = (page - 1) * limit
+            end = start + limit
+
+            doctors = doctors[start:end]
+
+            serializer = DoctorRequestViewSerializer(
+                doctors,
+                many=True
+            )
+
+            total_pages = (
+                total_count + limit - 1
+            ) // limit
+
+            return Response(
+
+                {
+                    "status": True,
+
+                    "count": total_count,
+
+                    "total_pages": total_pages,
+
+                    "current_page": page,
+
+                    "data": serializer.data
+
+                },
+
+                status=status.HTTP_200_OK
+
+            )
+
+        except Exception as e:
+
+            return Response(
+
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                    "errors": str(e)
+
+                },
+
+                status=status.HTTP_400_BAD_REQUEST
+
+            )

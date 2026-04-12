@@ -10,5 +10,6 @@ urlpatterns = [
     path('groups/', GroupListCreateView.as_view()),
     path('groups/<int:pk>/', GroupDetailView.as_view()),
     path('users/<int:pk>/assign-groups/', UserGroupAssignView.as_view()),
-
+    path('non-approved-doctors-list/', NonApprovedDoctorListView.as_view(), name="non-approved-doctors-list"),
 ]
+

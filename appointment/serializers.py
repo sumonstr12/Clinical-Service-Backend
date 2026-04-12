@@ -8,7 +8,7 @@ class AvailableDoctorSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = HealthCareProvider
-        fields = ['id', 'user', 'specialization', 'qualification']
+        fields = ['id', 'user', 'specialization', 'qualification', 'gender', 'date_of_birth', 'img_url', 'cv', 'license_count']
 
 class AvailabilitySlotSerializers(serializers.ModelSerializer):
     class Meta:
