@@ -16,6 +16,53 @@ class DoctorRequestViewSerializer(serializers.ModelSerializer):
         return obj.user.full_name
     
 
+class PatientListSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='user.phone')
+    age = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = '__all__'
+    
+    def get_full_name(self, obj):
+        return obj.user.full_name
+
+    def get_age(self, obj):
+        try:
+            return obj.medical_profile.age()
+        except Exception:
+            return None
+        
+
+class CaregiverListSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='user.phone')
+    patient_name = serializers.SerializerMethodField()
+    relation_type = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CareGiver
+        fields = '__all__'
+
+    def get_full_name(self, obj):
+        return obj.user.full_name
+
+    def get_patient_name(self, obj):
+        relation = obj.patient_relations.first()
+        return relation.patient.user.full_name if relation else None
+
+    def get_relation_type(self, obj):
+        relation = obj.patient_relations.first()
+        return relation.relationship_type if relation else None
+    
+    def get_status(self, obj):
+        relation = obj.patient_relations.first()
+        return relation.status if relation else None
+
 
 # Permission based serializer
 

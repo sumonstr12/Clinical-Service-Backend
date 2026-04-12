@@ -11,5 +11,8 @@ urlpatterns = [
     path('groups/<int:pk>/', GroupDetailView.as_view()),
     path('users/<int:pk>/assign-groups/', UserGroupAssignView.as_view()),
     path('non-approved-doctors-list/', NonApprovedDoctorListView.as_view(), name="non-approved-doctors-list"),
+
+    path('patient-list/', PatientListView.as_view(), name='patient-list'),
+    path('caregiver-list/', CaregiverListView.as_view(), name='caregiver-list'),
 ]
 

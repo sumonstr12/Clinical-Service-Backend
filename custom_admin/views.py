@@ -292,7 +292,7 @@ class AdminLogInView(APIView):
 
 # Doctor list view those are not approved yet
 class NonApprovedDoctorListView(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
 
@@ -369,4 +369,157 @@ class NonApprovedDoctorListView(APIView):
 
                 status=status.HTTP_400_BAD_REQUEST
 
+            )
+        
+
+
+# Not completed yet
+class ApprovedDoctorDetailView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, doctor_id):
+        try:
+            doctor = HealthCareProvider.objects.select_related("user").get(id=doctor_id, is_approved=True)
+            serializer = DoctorRequestViewSerializer(doctor)
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        except HealthCareProvider.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Doctor not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+
+class PatientListView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+
+        try:
+
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
+            patients = Patient.objects.all().order_by("id")
+            
+            if search:
+                patients = patients.filter(
+                    Q(user__full_name__icontains=search) |
+                    Q(user__username__icontains=search)
+                )   
+
+            total_count = patients.count()
+
+            start = (page - 1) * limit
+            end = start + limit
+
+            patients = patients[start:end]
+
+            serializer = PatientListSerializer(
+                patients,
+                many=True
+            )
+
+            total_pages = (
+                total_count + limit - 1
+            ) // limit
+
+            return Response(
+                {
+                    "status": True,
+
+                    "count": total_count,
+
+                    "total_pages": total_pages,
+
+                    "current_page": page,
+
+                    "data": serializer.data
+
+                },status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+
+            return Response(
+
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                    "errors": str(e)
+
+                },
+
+                status=status.HTTP_400_BAD_REQUEST
+
+            )
+
+class CaregiverListView(APIView):
+    # permission_classes = [IsAdmin]
+
+    def get(self, request):
+        try:
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
+            caregivers = CareGiver.objects.all().order_by("id")
+
+            if search:
+                caregivers = caregivers.filter(
+                    Q(user__full_name__icontains=search) |
+                    Q(user__username__icontains=search)
+                )
+            
+            total_count = caregivers.count()
+
+            start = (page - 1) * limit
+            end = start + limit
+
+            caregivers = caregivers[start:end]
+
+            serializer = CaregiverListSerializer(
+                caregivers,
+                many=True
+            )
+
+            total_pages = (
+                total_count + limit - 1
+            ) // limit
+
+
+            return Response(
+                {
+                    "status": True,
+
+                    "count": total_count,
+
+                    "total_pages": total_pages,
+
+                    "current_page": page,
+
+                    "data": serializer.data
+
+                },status=status.HTTP_200_OK
+            )
+
+
+
+        
+        except Exception as e:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Failed to Load Data.",
+                    "error" : str(e)
+                }, status=status.HTTP_400_BAD_REQUEST
             )
