@@ -16,6 +16,9 @@ from .permissions import *
 from django.utils import timezone
 
 from django.contrib.auth import get_user_model, authenticate
+
+from rest_framework_simplejwt.views import TokenRefreshView
+
 # Create your views here.
 
 User = get_user_model()
@@ -803,3 +806,32 @@ class UserProfileView(APIView):
 
                 }, status=status.HTTP_404_NOT_FOUND
             )
+        
+
+
+
+
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+
+    def post(self, request, *args, **kwargs):
+
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        print("Refresh Token from cookie:", refresh_token)
+
+        if not refresh_token:
+            return Response(
+                {"error": "No refresh token in cookie"},
+                status=400
+            )
+
+        data = request.data.copy()
+        data["refresh"] = refresh_token
+
+        serializer = self.get_serializer(data=data)
+
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.validated_data)

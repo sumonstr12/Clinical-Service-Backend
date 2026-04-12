@@ -1,7 +1,7 @@
 
 from django.urls import path
 from .views import *
-from rest_framework_simplejwt.views import TokenRefreshView
+# from rest_framework_simplejwt.views import TokenRefreshView
 
 
 
@@ -26,7 +26,7 @@ urlpatterns = [
     path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
 
 
-    path('token/refresh/', TokenRefreshView.as_view()),
+    path('token/refresh/', CookieTokenRefreshView.as_view()),
 ]
 
 
