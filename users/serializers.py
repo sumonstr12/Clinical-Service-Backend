@@ -426,13 +426,26 @@ class UserSerializer(serializers.ModelSerializer):
 class PatientProfileViewSerializer(serializers.ModelSerializer):
      
      user = UserSerializer(read_only = True)
-     medical_details = MedicalProfileSerializer(source='medical_profile', read_only=True)
      weight_history = UpdateWeightSerializer(source='weights', read_only=True, many=True)
+     medical_profile = serializers.SerializerMethodField()
 
      class Meta:
           model = Patient
           fields = '__all__'
           read_only_fields = ['id']
+
+     def get_medical_profile(self, obj):
+
+          try:
+               profile = obj.medical_profile
+
+               if profile:
+                    return MedicalProfileSerializer(profile).data
+
+          except MedicalProfile.DoesNotExist:
+               return None
+
+          return None
 
 class HealthCareProviderProfileViewSerializer(serializers.ModelSerializer):
 

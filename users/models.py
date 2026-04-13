@@ -76,7 +76,7 @@ class MedicalProfile(models.Model):
     cancer_treatment_type = models.CharField(max_length=400, blank=True)
     medicine_and_dose = models.CharField(max_length=300, blank=True)
     chemo_history_count = models.IntegerField(blank=True, null=True)
-    height = models.DecimalField(max_digits=3, decimal_places=2, blank=True, null=True)
+    height = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True)
     weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     date_of_birth = models.DateField( blank=True, null=True)
@@ -94,7 +94,7 @@ class MedicalProfile(models.Model):
 class Patient(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     medical_profile = models.OneToOneField(
-        MedicalProfile, on_delete=models.CASCADE
+        MedicalProfile, on_delete=models.CASCADE, null=True,blank=True
     )
     is_Onboarding_completed = models.BooleanField(default=False)
 
@@ -199,19 +199,17 @@ class HealthCareProvider(models.Model):
 
 class WeightHistory(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='weights')
-    weight = models.DecimalField(max_digits=5, decimal_places=2)
-    bmi = models.DecimalField(max_digits=5, decimal_places=2)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    bmi = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     recorded_at = models.DateField()
 
     def save(self, *args, **kwargs):
-        # patient_height = self.patient.medical_profile.height
         if self.weight:
             try:
-                #
-                patient_height = self.patient.medical_profile.height
-                print(f"patient height : {patient_height}")
-                if patient_height and self.weight:
-                    height = float(patient_height) 
+                profile = self.patient.medical_profile
+                print(f"Patient Medical Profile: {profile}")
+                if profile and profile.height and self.weight:
+                    height = float(profile.height) 
 
                     if height > 0:
                         calc_bmi = float(self.weight) / (height ** 2)

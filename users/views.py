@@ -791,7 +791,7 @@ class UserProfileView(APIView):
 
             return Response(
                 {
-                    "success" : True,
+                    "status" : True,
                     "message" : "Profile Fetched successfull.",
                     "role" : user.role,
                     "data" : serializer.data
