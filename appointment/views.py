@@ -225,3 +225,26 @@ class AvailabilitySlotAllView(APIView):
                     "errors" : str(e)
                 }, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class DoctorAvailabilityView(APIView):
+    def get(self, request, doctor_id):
+        try:
+            slots = AvailabilitySlot.objects.filter(provider_id=doctor_id)
+            serializer = AvailabilitySlotViewSerializers(slots, many=True)
+
+            return Response(
+                {
+                    "status" : True,
+                    "data" : serializer.data
+                }, status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Failed to load data.",
+                    "errors" : str(e)
+                }, status=status.HTTP_404_NOT_FOUND
+            )

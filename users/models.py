@@ -190,6 +190,7 @@ class HealthCareProvider(models.Model):
     img_url = models.ImageField(upload_to="uploads/")
     cv = models.FileField(upload_to="pdf/")
     license_count = models.IntegerField()
+    patient_count = models.IntegerField(default=0)
     is_approved = models.BooleanField(default=False)
 
     def __str__(self):
