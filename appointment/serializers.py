@@ -10,19 +10,19 @@ class AvailableDoctorSerializer(serializers.ModelSerializer):
         model = HealthCareProvider
         fields = ['id', 'user', 'specialization', 'qualification', 'gender', 'date_of_birth', 'img_url', 'cv', 'license_count', 'patient_count']
 
-class AvailabilitySlotSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = AvailabilitySlot
-        fields = '__all__'
-        read_only_fields = ["provider"]
+# class AvailabilitySlotSerializers(serializers.ModelSerializer):
+#     class Meta:
+#         model = AvailabilitySlot
+#         fields = '__all__'
+#         read_only_fields = ["provider"]
 
 
-class AvailabilitySlotViewSerializers(serializers.ModelSerializer):
-    provider = HealthCareProviderProfileViewSerializer(read_only=True)
+# class AvailabilitySlotViewSerializers(serializers.ModelSerializer):
+#     provider = HealthCareProviderProfileViewSerializer(read_only=True)
 
-    class Meta:
-        model = AvailabilitySlot
-        fields = ["provider", "start_time", "end_time", "is_available"]
+#     class Meta:
+#         model = AvailabilitySlot
+#         fields = ["provider", "start_time", "end_time", "is_available"]
     
 
 class AppointmentSerializer(serializers.ModelSerializer):

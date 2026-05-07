@@ -48,11 +48,6 @@ class DoctorLeave(models.Model):
     def __str__(self):
         return f"{self.doctor.user.full_name} - {self.leave_date}"
 
-
-
-
-
-
 class Appointment(models.Model):
 
     STATUS_CHOICES = (
@@ -68,7 +63,6 @@ class Appointment(models.Model):
 
     provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='provider_appointments')
 
-    slot = models.ForeignKey(AvailabilitySlot, on_delete=models.CASCADE)
 
     issue_description = models.TextField()
 
@@ -76,14 +70,14 @@ class Appointment(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
 
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
     appointment_date = models.DateTimeField()
+
+    appointment_time = models.TimeField()
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.patient} -> {self.provider} ({self.scheduled})"
+        return f"{self.patient} -> {self.provider} ({self.appointment_date})"
     
 
 class Prescription(models.Model):
