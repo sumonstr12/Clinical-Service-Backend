@@ -560,13 +560,18 @@ class UserLogOutView(APIView):
             token = RefreshToken(refreshToken)
             token.blacklist()
 
-            return Response(
+            response = Response(
                 {
                     "success" : True,
                     "message" : "Log-Out succesfully."
                 },
                 status=status.HTTP_200_OK
             )
+
+            response.delete_cookie("refresh_token")
+
+            return response
+
         except Exception as e:
             return Response(
                 {
