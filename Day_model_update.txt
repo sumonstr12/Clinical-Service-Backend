@@ -1,0 +1,14 @@
+from appointment.models import Day
+
+days = [
+    (0, 'Saturday'),
+    (1, 'Sunday'),
+    (2, 'Monday'),
+    (3, 'Tuesday'),
+    (4, 'Wednesday'),
+    (5, 'Thursday'),
+    (6, 'Friday'),
+]
+
+or value, name in days:
+    Day.objects.get_or_create(day_of_week=value)

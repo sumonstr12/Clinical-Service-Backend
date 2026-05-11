@@ -8,6 +8,8 @@ from .views import *
 urlpatterns = [
     path('user-registration', TempoDataStoredView.as_view(), name='user-registration'),
     path('caregiver-registration', CaregiverRegistrationView.as_view(), name='caregiver-registration'),
+    path('doctor-registration', DoctorRegistrationView.as_view(), name='doctor-registration'),
+    path('doctor-email-username-verification', DoctorEmailOdVerificationView.as_view(), name='doctor-email-username-verification'),
     path('user-login', UserLogInView.as_view(), name='user-login'),
     path('verify-otp-registration', UserRegistrationView.as_view(), name='verify-otp-registration'),
     path('user-login/update-profile', UserFirstLogInView.as_view(), name='user-login/update-profile'),

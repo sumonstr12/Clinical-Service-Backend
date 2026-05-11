@@ -5,6 +5,7 @@ from .views import *
 
 urlpatterns = [
     path('available-doctors/', AvailableDoctorsView.as_view(), name="available-doctors"),
+    path('doctor/availability/create/', DoctorAvailabilityCreateView.as_view(), name="doctor/availability/create/"),
 #     path('slot-create', AvailabilitySlotCreateView.as_view(), name="slot-create"),
 #     path('slot-update/<int:pk>', AvailabilitySlotUpdateView.as_view(), name="slot-update"),
 #     path('slot-delete/<int:pk>', AvailabilitySlotDeleteView.as_view(), name="slot-delete"),

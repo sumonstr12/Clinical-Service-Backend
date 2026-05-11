@@ -7,22 +7,53 @@ from django.utils import timezone
 User = settings.AUTH_USER_MODEL
 
 # Create your models here.
-class DoctorWorkingDay(models.Model):
+
+class Day(models.Model):
     DAY_CHOICES = [
-        (0, 'Monday'),
-        (1, 'Tuesday'),
-        (2, 'Wednesday'),
-        (3, 'Thursday'),
-        (4, 'Friday'),
-        (5, 'Saturday'),
-        (6, 'Sunday'),
+        (0, 'Saturday'),
+        (1, 'Sunday'),
+        (2, 'Monday'),
+        (3, 'Tuesday'),
+        (4, 'Wednesday'),
+        (5, 'Thursday'),
+        (6, 'Friday'),
     ]
 
-    doctor      = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='working_days')
-    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+    day_of_week = models.IntegerField(choices=DAY_CHOICES, unique=True)
+
+    def __str__(self):
+        return self.get_day_of_week_display()
+
+
+
+class DoctorAvailability(models.Model):
+
+    doctor = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='availabilities' )
+
+    day = models.ForeignKey( Day, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('doctor', 'day_of_week')
+        unique_together = ['doctor', 'day']
+
+    def __str__(self):
+        return f"{self.doctor.user.full_name} - {self.day}"
+    
+
+class DoctorSlot(models.Model):
+
+    availability = models.ForeignKey( DoctorAvailability, on_delete=models.CASCADE, related_name='slots')
+
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    is_booked = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.start_time} - {self.end_time}"
+class DoctorWorkingDay(models.Model):
+    doctor      = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='working_days')
+    days = models.ManyToManyField(Day, related_name='doctors')
+
 
     def __str__(self):
         return f"{self.doctor.user.full_name} - {self.get_day_of_week_display()}"

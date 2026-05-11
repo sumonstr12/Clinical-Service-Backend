@@ -174,7 +174,81 @@ class UserRegistrationView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
 
+class DoctorRegistrationView(APIView):
+    def post(self, request):
+        serializer = RegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    user = serializer.save()
+
+                    return Response(
+                        {
+                            "status" : True,
+                            "message" : "Doctor Registration Successfull.Waiting for approval.!"
+                        }, status=status.HTTP_201_CREATED
+                    )
+
+            except Exception as e:
+                error_message = str(e)  
+
+                if "email" in error_message.lower(): 
+                    message = "Email already exists"  
+                elif "username" in error_message.lower():  
+                    message = "Username already exists"  
+                else:
+                    message = error_message  
+                return Response(
+                    {  
+                        "status" : False,
+                        "error": "Registration failed",
+                        "message": message
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+class DoctorEmailOdVerificationView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        username = request.data.get("username")
+        print(email, username)
+        if not email:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Email field is required."
+                }, status=status.HTTP_200_OK
+            )
+        if not username:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Username field is required."
+                }, status=status.HTTP_200_OK
+            )
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Email already exists."
+                }, status=status.HTTP_200_OK
+            )
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Username already exists."
+                }, status=status.HTTP_200_OK
+            )
+        return Response(
+            {
+                "status" : True,
+                "message" : "Email and username are available."
+            }, status=status.HTTP_200_OK
+        )
 
 class CaregiverRegistrationView(APIView):
     def post(self, request):

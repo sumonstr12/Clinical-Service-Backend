@@ -95,6 +95,40 @@ class AvailableDoctorsView(APIView):
 
 
 
+class DoctorAvailabilityCreateView(APIView):
+    permission_classes = [IsHealthCareProvider]
+    def post(self, request):
+
+        doctor = request.user.healthcareprovider
+
+        # print(request.data)
+        serializer = DoctorAvailabilitySerializer( data=request.data,
+            context={
+                'doctor': doctor
+            }
+        )
+
+        if serializer.is_valid():
+
+            serializer.save(doctor=doctor)
+
+            return Response(
+                {
+                    "status": True,
+                    "message": "Doctor availability slots created successfully.",
+                    "data": serializer.data
+                },status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            {
+                "status": False,
+                "message": "Failed to create doctor availability slots.",
+                "errors": serializer.errors
+            },status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 # class AvailabilitySlotCreateView(APIView):
 #     permission_classes = [IsHealthCareProvider]
 #     # permission_classes = [IsCaregiver]
