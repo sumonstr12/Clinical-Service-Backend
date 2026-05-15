@@ -27,31 +27,26 @@ class Day(models.Model):
         return self.get_day_of_week_display()
 
 
+class TimeSlot(models.Model):
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
-class DoctorAvailability(models.Model):
+    def __str__(self):
+        return f"{self.start_time} - {self.end_time}"
+
+
+class DoctorAvailable(models.Model):
 
     doctor = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='availabilities' )
-
     day = models.ForeignKey( Day, on_delete=models.CASCADE)
+    time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ['doctor', 'day']
 
     def __str__(self):
-        return f"{self.doctor.user.full_name} - {self.day}"
-    
+        return f"{self.doctor.user.full_name} - {self.day } ({self.time_slot})"
 
-class DoctorSlot(models.Model):
-
-    availability = models.ForeignKey( DoctorAvailability, on_delete=models.CASCADE, related_name='slots')
-
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-
-    is_booked = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.start_time} - {self.end_time}"
 
 class DoctorLeave(models.Model):
     doctor = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='leaves')
@@ -80,7 +75,7 @@ class Appointment(models.Model):
     provider = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='provider_appointments')
 
 
-    slot = models.ForeignKey('DoctorSlot', on_delete=models.CASCADE, related_name='appointments')
+    slot = models.OneToOneField('TimeSlot', on_delete=models.CASCADE, related_name='appointments')
 
     issue_description = models.TextField()
 
