@@ -5,7 +5,10 @@ from .views import *
 
 urlpatterns = [
     path('available-doctors/', AvailableDoctorsView.as_view(), name="available-doctors"),
-    # path('doctor/availability/create/', DoctorAvailabilityCreateView.as_view(), name="doctor/availability/create/"),
+    path('doctor/availability/create/', DoctorAvailabilityCreateView.as_view(), name="doctor/availability/create/"),
+    path('doctor/availability/delete/', DoctorAvailabilityDeleteView.as_view(), name="doctor/availability/delete/"),
+    path('doctor/doctor-slot-view/', DoctorSlotsView.as_view(), name="doctor/doctor-slot-view"),
+    path('doctor/available-slots/', AvailabilitySlotView.as_view(), name="doctor/available-slots/"),
     # path('appointment/slots-view/', AvailabilitySlotView.as_view(), name="appointment/slots-view/"),
     path('appointment/create/', CreateAppointmentView.as_view(), name="appointment/create/"),
 #     path('slot-create', AvailabilitySlotCreateView.as_view(), name="slot-create"),

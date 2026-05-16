@@ -42,7 +42,7 @@ class DoctorAvailable(models.Model):
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['doctor', 'day']
+        unique_together = ['doctor', 'day', 'time_slot']
 
     def __str__(self):
         return f"{self.doctor.user.full_name} - {self.day } ({self.time_slot})"
@@ -75,7 +75,7 @@ class Appointment(models.Model):
     provider = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE, related_name='provider_appointments')
 
 
-    slot = models.OneToOneField('TimeSlot', on_delete=models.CASCADE, related_name='appointments')
+    slot = models.ForeignKey('TimeSlot', on_delete=models.CASCADE, related_name='appointments')
 
     issue_description = models.TextField()
 
@@ -89,6 +89,10 @@ class Appointment(models.Model):
 
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('provider', 'slot', 'appointment_date')
 
     def __str__(self):
         return f"{self.patient} -> {self.provider} ({self.appointment_date})"

@@ -9,6 +9,7 @@ from users.permissions import *
 from django.db.models import Q
 
 from datetime import datetime
+from django.utils import timezone
 
 
 
@@ -96,91 +97,179 @@ class AvailableDoctorsView(APIView):
 
             )
 
+class DoctorAvailabilityCreateView(APIView):
 
+    permission_classes = [IsHealthCareProvider]
 
-# class DoctorAvailabilityCreateView(APIView):
-#     permission_classes = [IsHealthCareProvider]
-#     def post(self, request):
+    def post(self, request):
 
-#         doctor = request.user.healthcareprovider
+        user = request.user
+        provider = user.healthcareprovider
 
-#         # print(request.data)
-#         serializer = DoctorAvailabilitySerializer( data=request.data,
-#             context={
-#                 'doctor': doctor
-#             }
-#         )
+        time_slots = request.data.get("time_slot", [])
 
-#         if serializer.is_valid():
+        serializer = DoctorAvailabilitySerializer(data=request.data)
 
-#             serializer.save(doctor=doctor)
+        if serializer.is_valid():
+            test = serializer.validated_data
+            print(f"Validated data: {test}")
+            day_id = serializer.validated_data['day'].id
+            print(f"day_id: {day_id}")
+            created = 0
+            skipped = 0
 
-#             return Response(
-#                 {
-#                     "status": True,
-#                     "message": "Doctor availability slots created successfully.",
-#                     "data": serializer.data
-#                 },status=status.HTTP_201_CREATED
-#             )
+            for slot_id in time_slots:
 
-#         return Response(
-#             {
-#                 "status": False,
-#                 "message": "Failed to create doctor availability slots.",
-#                 "errors": serializer.errors
-#             },status=status.HTTP_400_BAD_REQUEST
-#         )
+                exists = DoctorAvailable.objects.filter(
+                    doctor=provider,
+                    day_id=day_id,
+                    time_slot_id=slot_id
+                ).exists()
 
+                if exists:
+                    skipped += 1
+                    continue
 
-# class AvailabilitySlotView(APIView):
-#     permission_classes = [IsPatient | IsCaregiver]
-#     def post(self, request):
-#         date_str = request.data.get("day")
-#         doctor_id = request.data.get("doctor_id")
+                DoctorAvailable.objects.create(
+                    doctor=provider,
+                    day_id=day_id,
+                    time_slot_id=slot_id
+                )
 
-#         try:
+                created += 1
 
-#             date_object = datetime.strptime(date_str,"%Y-%m-%d")
-#             python_weekday = date_object.weekday()
+            return Response({
+                "status": True,
+                "message": "Availability processed successfully.",
+                "created": created,
+                "skipped": skipped
+            }, status=201)
 
-#             day_mapping = {
-#                 5: 0,  # Saturday
-#                 6: 1,  # Sunday
-#                 0: 2,  # Monday
-#                 1: 3,  # Tuesday
-#                 2: 4,  # Wednesday
-#                 3: 5,  # Thursday
-#                 4: 6   # Friday
-#             }
-
-
-#             day_of_week = day_mapping[python_weekday]
-
-#             slots = DoctorSlot.objects.filter(
-#                 availability__doctor_id=doctor_id,
-#                 availability__day__day_of_week=day_of_week,
-#                 is_booked=False
-#             )
-
-#             serializer = DoctorSlotSerializer(slots, many=True)
-
-#             return Response(
-#                 {
-#                     "status" : True,
-#                     "data" : serializer.data
-#                 }, status=status.HTTP_200_OK
-#             )
-            
-#         except Exception as e:
-#             return Response(
-#                 {
-#                     "status" : False,
-#                     "message" : "Failed to load data.",
-#                     "errors" : str(e)
-#                 }, status=status.HTTP_404_NOT_FOUND
-#             )
+        return Response({
+            "status": False,
+            "message": "Failed to create availability.",
+            "errors": serializer.errors
+        }, status=400)
     
 
+class DoctorSlotsView(APIView):
+
+    permission_classes = [IsHealthCareProvider]
+    def get(self, request):
+
+        day = request.GET.get("day")
+        doctor_id = request.user.healthcareprovider.id
+        print(f"Received day: {day}, doctor_id: {doctor_id}")
+
+        try:
+            slots = DoctorAvailable.objects.filter(doctor_id=doctor_id, day_id=day).select_related('time_slot')
+            serializer = DoctorSlotViewSerializer(slots, many=True)
+
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                    "errors": str(e)
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+class DoctorAvailabilityDeleteView(APIView):
+
+    permission_classes = [IsHealthCareProvider]
+
+    def delete(self, request):
+
+        user = request.user
+        provider = user.healthcareprovider
+
+        day_id = request.data.get("day")
+        time_slot_id = request.data.get("time_slot")
+
+        if not day_id or not time_slot_id:
+            return Response({
+                "status": False,
+                "message": "day and time_slot are required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted, _ = DoctorAvailable.objects.filter(doctor=provider, day_id=day_id, time_slot_id=time_slot_id).delete()
+
+        if deleted:
+            return Response({
+                "status": True,
+                "message": "Availability deleted successfully."
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "status": False,
+                "message": "No matching availability found to delete."
+            }, status=status.HTTP_404_NOT_FOUND)
+class AvailabilitySlotView(APIView):
+    
+    def post(self, request):
+
+        doctor_id = request.data.get("doctor")
+        date = request.data.get("date")
+
+        print(f"Received doctor_id: {doctor_id}, date: {date}")
+
+        if not doctor_id or not date:
+            return Response(
+                {
+                    "status": False,
+                    "message": "doctor_id and date are required."
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+
+            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+            day = (date_obj.weekday() + 2) % 7
+
+            available_slots = DoctorAvailable.objects.filter(
+                doctor_id=doctor_id,
+                day=day
+            ).select_related('time_slot')
+
+            appointments_on_date = Appointment.objects.filter(
+                provider_id=doctor_id,
+                appointment_date=date_obj
+            ).select_related('slot')
+
+            booked_slot_ids = appointments_on_date.values_list(
+                'slot_id',
+                flat=True
+            )
+
+            free_slots = available_slots.exclude(
+                time_slot_id__in=booked_slot_ids
+            )
+
+
+            serializer = AvailabilitySlotSerializer(free_slots, many=True)
+
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                    "errors": str(e)
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
 
 class CreateAppointmentView(APIView):
 
@@ -213,21 +302,6 @@ class CreateAppointmentView(APIView):
         serializer = AppointmentSerializer(data=data)
 
         if serializer.is_valid():
-
-            slot = serializer.validated_data['slot']
-            # slot = DoctorSlot.objects.select_for_update().get(id=slot.id)
-
-            if slot.is_booked:
-                return Response(
-                    {
-                        "status": False,
-                        "error": "Slot already booked"
-                    },status=status.HTTP_400_BAD_REQUEST
-                )
-
-            slot.is_booked = True
-            slot.save()
-
             appointment = serializer.save(patient=patient)
 
             return Response(
@@ -245,120 +319,35 @@ class CreateAppointmentView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST
         )
 
-# class AvailabilitySlotUpdateView(APIView):
-#     permission_classes = [IsHealthCareProvider]
-#     def put(self, request, pk):
-#         user = request.user
-#         provider = user.healthcareprovider
 
-#         try:
-#             slot = AvailabilitySlot.objects.get(id=pk, provider=provider)
+class ViewAppointmentsUsersView(APIView):
 
-#         except AvailabilitySlot.DoesNotExist:
-#             return Response(
-#                 {
-#                     "status": False,
-#                     "message": "Slot not found."
-#                 },status=status.HTTP_404_NOT_FOUND
-#             )
-        
-#         serializer = AvailabilitySlotSerializers(
-#             instance=slot,
-#             data=request.data
-#         )
+    permission_classes = [IsAuthenticated]
 
-#         if serializer.is_valid():
-#             serializer.save(provider=provider)
+    def get(self, request):
 
-#             return Response(
-#                 {
-#                     "status": True,
-#                     "message": "Slot Updated Successfully."
-#                 },status=status.HTTP_200_OK
-#             )
-#         return Response(
-#             {
-#                 "status": False,
-#                 "errors": serializer.errors
-#             },
-#             status=status.HTTP_400_BAD_REQUEST
-#         )
-    
+        user = request.user
 
+        if hasattr(user, 'patient'):
+            appointments = Appointment.objects.filter(patient=user.patient).select_related('provider', 'slot')
 
-# class AvailabilitySlotDeleteView(APIView):
-#     permission_classes = [IsHealthCareProvider]
-#     def delete(self, request, pk):
-#         user = request.user
-#         provider = user.healthcareprovider
-#         if not pk:
-#             return Response(
-#                 {
-#                     "status" : False,
-#                     "message" : "pk must be required"
-#                 }, status=status.HTTP_404_NOT_FOUND
-#             )
+        elif hasattr(user, 'caregiver'):
+            appointments = Appointment.objects.filter(caregiver=user.caregiver).select_related('provider', 'slot')
 
-#         try:
-#             slot = AvailabilitySlot.objects.get(id=pk, provider=provider)
-#             slot.delete()
-#             return Response(
-#                 {
-#                     "status" : True,
-#                     "message" : "Slots deleted Successfully."
-#                 }, status=status.HTTP_200_OK
-#             )
-        
-#         except Exception as e:
-#             return Response(
-#                 {
-#                     "status" : False,
-#                     "Errors" : str(e)
-#                 }, status=status.HTTP_400_BAD_REQUEST
-#             )
-        
+        elif hasattr(user, 'healthcareprovider'):
+            appointments = Appointment.objects.filter(provider=user.healthcareprovider).select_related('patient', 'slot')
 
-# class AvailabilitySlotAllView(APIView):
-#     def get(self, request):
-#         try:
-#             slots = AvailabilitySlot.objects.all()
-#             serializer = AvailabilitySlotViewSerializers(slots, many=True)
+        else:
+            return Response(
+                {"error": "Invalid user role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-#             return Response(
-#                 {
-#                     "status" : True,
-#                     "data" : serializer.data
-#                 }, status=status.HTTP_200_OK
-#             )
-            
-#         except Exception as e:
-#             return Response(
-#                 {
-#                     "status" : False,
-#                     "message" : "Failed to load data.",
-#                     "errors" : str(e)
-#                 }, status=status.HTTP_404_NOT_FOUND
-#             )
+        serializer = AppointmentSerializer(appointments, many=True)
 
-
-# class DoctorAvailabilityView(APIView):
-#     def get(self, request, doctor_id):
-#         try:
-#             slots = AvailabilitySlot.objects.filter(provider_id=doctor_id)
-#             serializer = AvailabilitySlotViewSerializers(slots, many=True)
-
-#             return Response(
-#                 {
-#                     "status" : True,
-#                     "data" : serializer.data
-#                 }, status=status.HTTP_200_OK
-#             )
-            
-#         except Exception as e:
-#             return Response(
-#                 {
-#                     "status" : False,
-#                     "message" : "Failed to load data.",
-#                     "errors" : str(e)
-#                 }, status=status.HTTP_404_NOT_FOUND
-#             )
+        return Response(
+            {
+                "status": True,
+                "data": serializer.data
+            }, status=status.HTTP_200_OK
+        )

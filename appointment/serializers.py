@@ -11,6 +11,40 @@ class AvailableDoctorSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'specialization', 'qualification', 'gender', 'date_of_birth', 'img_url', 'cv', 'license_count', 'patient_count']
 
 
+class DoctorSlotViewSerializer(serializers.ModelSerializer):
+    time_slot = serializers.CharField(source='time_slot.start_time', read_only=True)
+    class Meta:
+        model = DoctorAvailable
+        fields = ['id', 'day', 'time_slot']
+
+
+
+class DoctorAvailabilitySerializer(serializers.ModelSerializer):
+    doctor = AvailableDoctorSerializer(read_only=True)
+    time_slot = serializers.ListField(
+        child=serializers.IntegerField()
+    )
+
+    class Meta:
+        model = DoctorAvailable
+        fields = ['id', 'doctor', 'day', 'time_slot']
+
+    def validate_time_slot(self, value):
+        for slot_id in value:
+            if not TimeSlot.objects.filter(id=slot_id).exists():
+                raise serializers.ValidationError(f"Invalid slot id {slot_id}")
+        return value
+
+class AvailabilitySlotSerializer(serializers.ModelSerializer):
+    slot_id = serializers.IntegerField(source="time_slot.id")
+    start_time = serializers.CharField(source="time_slot.start_time")
+    end_time = serializers.CharField(source="time_slot.end_time")
+
+    class Meta:
+        model = DoctorAvailable
+        fields = ["slot_id", "start_time", "end_time"]
+
+
 class AppointmentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -23,11 +57,22 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
         if appointment_date < timezone.now():
             raise serializers.ValidationError("Appointment date cannot be in the past.")
+        
+        if appointment_date > timezone.now() + timezone.timedelta(days=20):
+            raise serializers.ValidationError("Appointment date cannot be more than 20 days in the future.")
 
         if not slot:
             raise serializers.ValidationError("Slot is required.")
 
-        if slot.is_booked:
-            raise serializers.ValidationError("This slot is already booked.")
 
         return data
+
+
+class AppointmentViewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    provider = AvailableDoctorSerializer(read_only=True)
+    slot = serializers.CharField(source='slot.start_time', read_only=True)
+
+    class Meta:
+        model = Appointment
+        fields = ['id', 'user', 'provider', 'appointment_date', 'slot', 'issue_description', 'created_at']
