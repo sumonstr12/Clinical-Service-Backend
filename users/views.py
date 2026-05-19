@@ -445,7 +445,29 @@ class CaregiverRequestApprovalView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST
         )
 
+class CaregiverRequestListView(APIView):
+    permission_classes = [IsPatient]
 
+    def get(self, request):
+
+        patient = Patient.objects.get(user=request.user)
+
+        relationships = CaregiverPatientRelationship.objects.filter(
+            patient=patient
+        )
+
+        serializer = CaregiverRequestListSerializer(
+            relationships,
+            many=True
+        )
+
+        return Response(
+            {
+                "status": True,
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
 # approval view
 class ApproveCaregiverRequestView(APIView):

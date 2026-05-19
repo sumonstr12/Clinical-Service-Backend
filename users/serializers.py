@@ -265,6 +265,40 @@ class CaregiverRequestSerializer(serializers.Serializer):
           )
 
           return verification  
+     
+
+
+# serializer for caregiver list in patient profile
+class CaregiverRequestListSerializer(serializers.ModelSerializer):
+    caregiver_name = serializers.SerializerMethodField()
+    verification_link = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CaregiverPatientRelationship
+        fields = [
+            "id",
+            "caregiver_name",
+            "relationship_type",
+            "status",
+            "verification_link"
+        ]
+
+    def get_caregiver_name(self, obj):
+        return obj.caregiver.user.full_name
+
+    def get_verification_link(self, obj):
+          try:
+               verification = obj.caregiververification
+               print(f"Verification: {verification}")   
+               return (
+                    f"http://localhost:8000/api/"
+                    f"verify-request/{verification.token}/"
+               )
+
+          except:
+               print(f"No verification found for relationship ID {obj.id}")
+               return None
+
 class LoginSerializer(serializers.ModelSerializer):
      class Meta:
           model = User

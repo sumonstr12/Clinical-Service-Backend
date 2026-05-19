@@ -282,6 +282,9 @@ class CreateAppointmentView(APIView):
         data['patient'] = None
         data['caregiver'] = None
 
+        patient = None
+        caregiver = None
+
         if hasattr(user, 'patient'):
 
             patient = user.patient
@@ -302,7 +305,11 @@ class CreateAppointmentView(APIView):
         serializer = AppointmentSerializer(data=data)
 
         if serializer.is_valid():
-            appointment = serializer.save(patient=patient)
+            if patient:
+                appointment = serializer.save(patient=patient)
+            else:
+                appointment = serializer.save(caregiver=caregiver)
+
 
             return Response(
                 {
@@ -343,7 +350,7 @@ class ViewAppointmentsUsersView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = AppointmentSerializer(appointments, many=True)
+        serializer = AppointmentViewSerializer(appointments, many=True)
 
         return Response(
             {

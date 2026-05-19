@@ -68,7 +68,7 @@ class Appointment(models.Model):
         ('COMPLETED', 'Completed'),
     )
 
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_appointments')
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='patient_appointments', null=True, blank=True)
 
     caregiver = models.ForeignKey(CareGiver, on_delete=models.SET_NULL, null=True, blank=True, related_name='caregiver_appointments')
 

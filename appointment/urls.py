@@ -11,6 +11,10 @@ urlpatterns = [
     path('doctor/available-slots/', AvailabilitySlotView.as_view(), name="doctor/available-slots/"),
     # path('appointment/slots-view/', AvailabilitySlotView.as_view(), name="appointment/slots-view/"),
     path('appointment/create/', CreateAppointmentView.as_view(), name="appointment/create/"),
+    
+
+    # User appointment view
+    path('appointment/view/users/', ViewAppointmentsUsersView.as_view(), name="appointment/view/users/"),
 #     path('slot-create', AvailabilitySlotCreateView.as_view(), name="slot-create"),
 #     path('slot-update/<int:pk>', AvailabilitySlotUpdateView.as_view(), name="slot-update"),
 #     path('slot-delete/<int:pk>', AvailabilitySlotDeleteView.as_view(), name="slot-delete"),
