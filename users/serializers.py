@@ -270,34 +270,44 @@ class CaregiverRequestSerializer(serializers.Serializer):
 
 # serializer for caregiver list in patient profile
 class CaregiverRequestListSerializer(serializers.ModelSerializer):
-    caregiver_name = serializers.SerializerMethodField()
-    verification_link = serializers.SerializerMethodField()
+     caregiver_name = serializers.SerializerMethodField()
+     caregiver_email = serializers.SerializerMethodField()
+     caregiver_phone = serializers.SerializerMethodField()
+     verification_link = serializers.SerializerMethodField()
 
-    class Meta:
-        model = CaregiverPatientRelationship
-        fields = [
-            "id",
-            "caregiver_name",
-            "relationship_type",
-            "status",
-            "verification_link"
-        ]
+     class Meta:
+          model = CaregiverPatientRelationship
+          fields = [
+               "id",
+               "caregiver_name",
+               "caregiver_email",
+               "caregiver_phone",
+               "relationship_type",
+               "status",
+               "verification_link"
+          ]
 
-    def get_caregiver_name(self, obj):
-        return obj.caregiver.user.full_name
+     def get_caregiver_name(self, obj):
+          return obj.caregiver.user.full_name
 
-    def get_verification_link(self, obj):
-          try:
-               verification = obj.caregiververification
-               print(f"Verification: {verification}")   
-               return (
-                    f"http://localhost:8000/api/"
-                    f"verify-request/{verification.token}/"
-               )
+     def get_caregiver_email(self, obj):
+          return obj.caregiver.user.email
 
-          except:
-               print(f"No verification found for relationship ID {obj.id}")
-               return None
+     def get_caregiver_phone(self, obj):
+          return obj.caregiver.user.phone
+
+     def get_verification_link(self, obj):
+               try:
+                    verification = obj.caregiververification
+                    print(f"Verification: {verification}")   
+                    return (
+                         f"http://localhost:8000/api/"
+                         f"verify-request/{verification.token}/"
+                    )
+
+               except:
+                    print(f"No verification found for relationship ID {obj.id}")
+                    return None
 
 class LoginSerializer(serializers.ModelSerializer):
      class Meta:

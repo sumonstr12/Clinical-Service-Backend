@@ -6,7 +6,7 @@ from .models import *
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from rest_framework import status
+from rest_framework import request, status
 from django.core.cache import cache
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -450,7 +450,22 @@ class CaregiverRequestListView(APIView):
 
     def get(self, request):
 
-        patient = Patient.objects.get(user=request.user)
+        if not request.user.is_authenticated:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Authentication credentials were not provided."
+                }, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        patient = Patient.objects.filter(user=request.user).first()
+        if not patient:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Patient Not Found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
 
         relationships = CaregiverPatientRelationship.objects.filter(
             patient=patient
