@@ -260,8 +260,7 @@ class CaregiverRequestSerializer(serializers.Serializer):
           )
 
           verification = CaregiverVerification.objects.create(
-               relationship=relationship,
-               expires_at=timezone.now() + timedelta(hours=24)
+               relationship=relationship
           )
 
           return verification  
@@ -299,7 +298,7 @@ class CaregiverRequestListSerializer(serializers.ModelSerializer):
      def get_verification_link(self, obj):
                try:
                     verification = obj.caregiververification
-                    print(f"Verification: {verification}")   
+                    print(f"Verification: {verification.id}, Token: {verification.token}")   
                     return (
                          f"http://localhost:8000/api/"
                          f"verify-request/{verification.token}/"

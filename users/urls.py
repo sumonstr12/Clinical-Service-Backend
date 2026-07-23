@@ -26,6 +26,7 @@ urlpatterns = [
     path('caregiver-request-list', CaregiverRequestListView.as_view(), name='caregiver-request-list'),
     path('add-new-patient', AddNewPatientRelationView.as_view(), name='add-new-patient'),
     path('verify-request/<uuid:token>/', ApproveCaregiverRequestView.as_view(), name='verify-request'),
+    path('caregiver-reject', CaregiverRequestRejectView.as_view(), name='caregiver-reject'),
     path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
 
 

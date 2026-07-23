@@ -177,7 +177,6 @@ class CaregiverVerification(models.Model):
     is_used = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
     verified_at = models.DateTimeField(null=True, blank=True)
 
 

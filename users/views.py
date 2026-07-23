@@ -1,4 +1,6 @@
 import random
+
+from django.contrib.auth.models import update_last_login
 from django.shortcuts import render
 from rest_framework.views import APIView
 from .serializers import *
@@ -281,7 +283,8 @@ class CaregiverRegistrationView(APIView):
                     return Response(
                         {
                             "status" : True,
-                            "message" : "Caregiver Registration Successfull.Waiting for approval.!"
+                            "message" : "Caregiver Registration Successfull.Waiting for approval.!",
+                            "user_id" : user.id,
                         }, status=status.HTTP_201_CREATED
                     )
 
@@ -357,7 +360,7 @@ class AddNewPatientRelationView(APIView):
 
 
 class CaregiverRequestApprovalView(APIView):
-    permission_classes = [IsCaregiver]
+    # permission_classes = [IsCaregiver]
     def post(self, request):
         patient_email = request.data.get("patient_email")
 
@@ -380,7 +383,11 @@ class CaregiverRequestApprovalView(APIView):
             )
 
         print(request.user)
-        caregiver = CareGiver.objects.get(user=request.user)
+        caregiver_id = request.data.get("caregiver_id")
+        if not caregiver_id:
+            caregiver_id = request.user.id
+
+        caregiver = CareGiver.objects.get(id=caregiver_id)
         patient = Patient.objects.get(user__email = patient_email)
 
         print(f"patient : {patient}")
@@ -504,13 +511,6 @@ class ApproveCaregiverRequestView(APIView):
                     "message" : "Token Already Used."
                 }, status=status.HTTP_400_BAD_REQUEST
             )
-        if verification.expires_at < timezone.now():
-            return Response(
-                {
-                    "status" : False,
-                    "message" : "Token expired.."
-                }, status=status.HTTP_400_BAD_REQUEST
-            )
 
         relationship = verification.relationship
         relationship.status = "active"
@@ -526,6 +526,51 @@ class ApproveCaregiverRequestView(APIView):
             }, status=status.HTTP_200_OK
         )
 
+
+class CaregiverRequestRejectView(APIView):
+    permission_classes = [IsPatient]
+    def post(self, request):
+        caregiver_id = request.data.get("caregiver_id")
+        if not caregiver_id:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Caregiver ID is required."
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        caregiver = CareGiver.objects.filter(id=caregiver_id).first()
+        if not caregiver:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Caregiver Not Found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+        relationship = CaregiverPatientRelationship.objects.filter(
+            caregiver=caregiver,
+            patient=request.user.patient
+        ).first()
+
+        if not relationship:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Relationship Not Found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+        relationship.status = "rejected"
+        relationship.save()
+
+        return Response(
+            {
+                "status" : True,
+                "message" : "Request Rejected."
+            }, status=status.HTTP_200_OK
+        )
 class OtpResendView(APIView):
     def post(self, request):
         email = request.data.get("email")
@@ -579,6 +624,7 @@ class UserLogInView(APIView):
 
             is_first_login = LoginSerializer(user).data['is_first_login']
             full_name = LoginSerializer(user).data['full_name']
+            update_last_login(None, user)
 
             if role == "ADMIN":
                 return Response(
@@ -664,7 +710,7 @@ class UserLogOutView(APIView):
             if not refreshToken:
                 return Response(
                     {
-                        "success": False,
+                        "status": False,
                         "message": "Refresh Token required."
                     }, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -673,7 +719,7 @@ class UserLogOutView(APIView):
 
             response = Response(
                 {
-                    "success" : True,
+                    "status" : True,
                     "message" : "Log-Out succesfully."
                 },
                 status=status.HTTP_200_OK
@@ -686,7 +732,7 @@ class UserLogOutView(APIView):
         except Exception as e:
             return Response(
                 {
-                    "success" : False,
+                    "status" : False,
                     "message" : "An error occured while log out."
                 }, status=status.HTTP_400_BAD_REQUEST
             )
