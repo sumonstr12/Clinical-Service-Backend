@@ -32,6 +32,7 @@ class RegistrationSerializer(serializers.Serializer):
      cancer_treatment_type = serializers.CharField(required=False, allow_blank=True, default="")
      medicine_and_dose = serializers.CharField(required=False, allow_blank=True, default="")
      chemo_history_count = serializers.IntegerField(required=False, default=0)
+     blood_group = serializers.CharField(required=False, allow_blank=True, default="")
      height = serializers.DecimalField(max_digits=5, decimal_places=2,required=False, default=0)
      gender = serializers.CharField(required=False, allow_blank=True, default="")
      weight = serializers.DecimalField(max_digits=5, decimal_places=2,required=False, default=0)
@@ -102,7 +103,7 @@ class RegistrationSerializer(serializers.Serializer):
 
                medical_fields = [
                     'cancer_type', 'cancer_treatment_type', 'medicine_and_dose',
-                    'chemo_history_count', 'height', 'gender', 'weight',
+                    'chemo_history_count', 'blood_group', 'height', 'gender', 'weight',
                     'date_of_birth', 'region'
                ]
 

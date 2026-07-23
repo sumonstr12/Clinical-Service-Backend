@@ -76,6 +76,7 @@ class MedicalProfile(models.Model):
     cancer_treatment_type = models.CharField(max_length=400, blank=True)
     medicine_and_dose = models.CharField(max_length=300, blank=True)
     chemo_history_count = models.IntegerField(blank=True, null=True)
+    blood_group = models.CharField(max_length=200, blank=True)
     height = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True)
     weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
@@ -89,7 +90,6 @@ class MedicalProfile(models.Model):
         return today.year -self.date_of_birth.year - (
             (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
         )
-
 
 class Patient(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
