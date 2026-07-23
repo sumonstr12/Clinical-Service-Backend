@@ -188,6 +188,7 @@ class HealthCareProvider(models.Model):
     date_of_birth = models.DateField()
     img_url = models.ImageField(upload_to="uploads/")
     cv = models.FileField(upload_to="pdf/")
+    license_number = models.CharField(max_length=20)
     license_count = models.IntegerField()
     patient_count = models.IntegerField(default=0)
     is_approved = models.BooleanField(default=False)

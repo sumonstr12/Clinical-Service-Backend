@@ -44,6 +44,7 @@ class RegistrationSerializer(serializers.Serializer):
      qualification = serializers.CharField(required=False)
      img_url = serializers.ImageField(required=False)
      cv = serializers.FileField(required=False)
+     license_number = serializers.CharField(required=False)
      license_count = serializers.IntegerField(required=False)
 
 
@@ -66,12 +67,13 @@ class RegistrationSerializer(serializers.Serializer):
 
           else:
                required_fields = [
-                         'specialization',
-                         'qualification',
-                         'img_url',
-                         'cv',
-                         'license_count',
-                         'date_of_birth',
+                    'specialization',
+                    'qualification',
+                    'img_url',
+                    'cv',
+                    'license_number',
+                    'license_count',
+                    'date_of_birth',
                ]
           
 
@@ -161,6 +163,7 @@ class RegistrationSerializer(serializers.Serializer):
                     gender = validated_data.pop("gender"),
                     img_url = validated_data.pop("img_url"),
                     cv = validated_data.pop("cv"),
+                    license_number = validated_data.pop("license_number"),
                     license_count = validated_data.pop("license_count")
                )
           return user
