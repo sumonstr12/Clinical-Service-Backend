@@ -20,5 +20,7 @@ urlpatterns = [
     path('patient-profile/<int:pk>/', PatientDetailView.as_view(), name='patient-detail'),
     path('doctor-profile/<int:pk>/', DoctorProfileView.as_view(), name='doctor-profile-view'),
 
+    # appontent-view stage
+    path('appointment-list/', AppointmentListView.as_view(), name='appointment-list'),
 ]
 

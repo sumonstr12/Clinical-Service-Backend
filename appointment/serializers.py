@@ -1,6 +1,8 @@
 from .models import *
 from rest_framework import serializers
 from users.serializers import *
+from custom_admin.serializers import *
+from users.serializers import *
 
 
 
@@ -76,3 +78,12 @@ class AppointmentViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appointment
         fields = ['id', 'user', 'provider', 'appointment_date', 'slot', 'issue_description', 'additional_notes', 'created_at', 'status']
+
+class AppointmentSlotViewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    provider = AvailableDoctorSerializer(read_only=True)
+    patient = PatientProfileViewSerializer(read_only=True)
+    slot = serializers.CharField(source='slot.start_time', read_only=True)
+    class Meta:
+        model = Appointment
+        fields = ['id', 'user', 'provider', 'patient', 'slot', 'issue_description', 'additional_notes', 'created_at', 'appointment_date', 'status']

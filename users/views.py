@@ -210,6 +210,15 @@ class DoctorRegistrationView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+        else:
+
+            return Response(
+                {
+                    "status" : False,
+                    "message": "Registration failed.",
+                    "errors" : serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class DoctorEmailOdVerificationView(APIView):

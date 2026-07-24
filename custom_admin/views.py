@@ -6,6 +6,7 @@ from users.permissions import *
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import *
+from appointment.serializers import *
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken 
@@ -588,3 +589,57 @@ class DoctorProfileView(APIView):
                     "message": "HealthCareProvider not found."
                 }, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class AppointmentListView(APIView):
+    # permission_classes = [IsAdmin]
+    def get(self, request):
+        try:
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
+            appointments = Appointment.objects.all().order_by("id")
+            if search:
+                appointments = appointments.filter(
+                    Q(patient__user__full_name__icontains=search) |
+                    Q(patient__user__username__icontains=search) |
+                    Q(patient__user__email__icontains=search) |
+                    Q(provider__user__full_name__icontains=search) |
+                    Q(provider__user__username__icontains=search) |
+                    Q(issue_description__icontains=search) |
+                    Q(status__icontains=search)
+                )
+            total_count = appointments.count()
+            start = (page - 1) * limit
+            end = start + limit
+            appointments = appointments[start:end]
+
+            serializer = AppointmentSlotViewSerializer(
+                appointments,
+                many=True
+            )
+
+            total_pages = (
+                total_count + limit - 1
+            ) // limit
+
+            return Response(
+            {
+                    'status': True,
+                    'count': total_count,
+                    'total_pages': total_pages,
+                    'current_page': page,
+                    'data': serializer.data
+                }, status=status.HTTP_200_OK
+            )
+        except Appointment.DoesNotExist:
+            return Response(
+            {
+                    'status': False,
+                    'message': "Appointment not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+
