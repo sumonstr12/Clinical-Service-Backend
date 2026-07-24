@@ -11,9 +11,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
-
-
 # Registration serializers for Patient and HealthCare Provider
 class RegistrationSerializer(serializers.Serializer):
      # User
@@ -170,8 +167,6 @@ class RegistrationSerializer(serializers.Serializer):
 
 
 # Update Serializer for Caregiver Registration
-
-
 class CaregiverRegistrationSerializer(serializers.Serializer):
 
      patient_email = serializers.EmailField()
@@ -211,8 +206,6 @@ class CaregiverRegistrationSerializer(serializers.Serializer):
           )
 
           return caregiver
-
-
 
 
 # serializer for add new patient with caregiver relation
@@ -507,3 +500,24 @@ class CareGiverProfileViewSerializer(serializers.ModelSerializer):
           model = CareGiver
           fields = '__all__'
 
+class CaregiverPatientRelationSerializer(serializers.ModelSerializer):
+     patient = PatientProfileViewSerializer(read_only=True)
+     class Meta:
+          model = CaregiverPatientRelationship
+          fields = '__all__'
+
+
+class CareGiverPatientRelationViewSerializer(serializers.ModelSerializer):
+
+    user = UserSerializer(read_only=True)
+    patient_relations = CaregiverPatientRelationshipSerializer(
+        many=True,
+        read_only=True
+    )
+    class Meta:
+        model = CareGiver
+        fields = [
+            'id',
+            'user',
+            'patient_relations',
+        ]

@@ -125,3 +125,9 @@ class LoginSerializer(serializers.ModelSerializer):
                "role",
                "is_verified"
           ]
+
+class CaregiverDetailViewSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField(source='user.phone')
+    

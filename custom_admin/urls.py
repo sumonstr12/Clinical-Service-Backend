@@ -14,5 +14,11 @@ urlpatterns = [
 
     path('patient-list/', PatientListView.as_view(), name='patient-list'),
     path('caregiver-list/', CaregiverListView.as_view(), name='caregiver-list'),
+
+    # users details view
+    path('caregiver-profile/<int:pk>/', CaregiverDetailView.as_view(), name='caregiver-profile-view'),
+    path('patient-profile/<int:pk>/', PatientDetailView.as_view(), name='patient-detail'),
+    path('doctor-profile/<int:pk>/', DoctorProfileView.as_view(), name='doctor-profile-view'),
+
 ]
 

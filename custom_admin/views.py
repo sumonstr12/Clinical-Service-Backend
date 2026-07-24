@@ -12,6 +12,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
 
 
+from users.serializers import *
+
 
 # Create your views here.
 
@@ -464,8 +466,7 @@ class PatientListView(APIView):
             )
 
 class CaregiverListView(APIView):
-    # permission_classes = [IsAdmin]
-
+    permission_classes = [IsAdmin]
     def get(self, request):
         try:
             search = request.GET.get("search", "")
@@ -522,4 +523,68 @@ class CaregiverListView(APIView):
                     "message" : "Failed to Load Data.",
                     "error" : str(e)
                 }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+class CaregiverDetailView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request, pk):
+        try:
+            caregiver = CareGiver.objects.get(id=pk)
+            serializer = CareGiverPatientRelationViewSerializer(caregiver)
+
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK
+            )
+        except CareGiver.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Caregiver not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+class PatientDetailView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request, pk):
+        try:
+            patient = Patient.objects.get(id=pk)
+            serializer = PatientProfileViewSerializer(patient)
+
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK
+            )
+        except Patient.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Patient not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class DoctorProfileView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request, pk):
+        try:
+            doctor = HealthCareProvider.objects.get(id=pk)
+            serializer = HealthCareProviderProfileViewSerializer(doctor)
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK
+            )
+
+        except HealthCareProvider.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "HealthCareProvider not found."
+                }, status=status.HTTP_404_NOT_FOUND
             )
