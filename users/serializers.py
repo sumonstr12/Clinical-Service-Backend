@@ -1,6 +1,7 @@
 
 from rest_framework import serializers
 from .models import *
+from custom_admin.models import *
 from django.db import transaction
 
 from django.utils import timezone
@@ -141,6 +142,8 @@ class RegistrationSerializer(serializers.Serializer):
 
           else:
 
+
+
                user = User.objects.create_user(
                     username = validated_data.pop("username"),
                     full_name = validated_data.pop("full_name"),
@@ -163,6 +166,28 @@ class RegistrationSerializer(serializers.Serializer):
                     license_number = validated_data.pop("license_number"),
                     license_count = validated_data.pop("license_count")
                )
+
+               noti_data = {
+                    'title': "Doctor request for approval.",
+                    'content': f"Doctor {user.full_name} request for approval. Review the documents and approve it.",
+               }
+
+               notification = Notification.objects.create(**noti_data)
+
+
+               admins = User.objects.filter(role=User.Role.ADMIN)
+
+               user_notifications = []
+               for admin in admins:
+                   user_notifications.append(UserNotification(user=admin, notification=notification))
+
+               UserNotification.objects.bulk_create(user_notifications)
+
+               # bulk_create increses performance of database query.
+               # it decreses ececution time almost 70-80%
+
+
+
           return user
 
 

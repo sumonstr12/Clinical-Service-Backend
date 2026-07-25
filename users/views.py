@@ -201,8 +201,11 @@ class DoctorRegistrationView(APIView):
                 elif "username" in error_message.lower():  
                     message = "Username already exists"  
                 else:
-                    message = error_message  
+                    message = error_message
+
+                print(message)
                 return Response(
+
                     {  
                         "status" : False,
                         "error": "Registration failed",
