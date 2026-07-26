@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from users.models import *
 from appointment.models import *
@@ -19,6 +20,8 @@ from users.serializers import *
 # Create your views here.
 
 User = get_user_model()
+
+
 
 
 class TotalUserCount(APIView):
@@ -642,4 +645,224 @@ class AppointmentListView(APIView):
             )
 
 
+class AdminNotificationListView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            queryset = UserNotification.objects.filter(user=user).select_related('notification')
 
+            is_read = request.query_params.get('is_read')
+            if is_read is not None:
+                if is_read.lower() == "true":
+                    queryset = queryset.filter(is_read=True)
+                elif is_read.lower() == "false":
+                    queryset = queryset.filter(is_read=False)
+
+            from_date = request.query_params.get('from_date')
+            to_date = request.query_params.get('to_date')
+
+            if from_date:
+                queryset = queryset.filter(created_at__gte=from_date)
+            if to_date:
+                queryset = queryset.filter(created_at__lt=to_date)
+
+            queryset = queryset.order_by("-created_at")
+
+            # pagination
+            page_size = int(request.query_params.get('page_size', 20))
+            page =int(request.query_params.get('page', 1))
+
+            start = (page - 1) * page_size
+            end = start + page_size
+            total_count = queryset.count()
+
+            paginated_queryset = queryset[start:end]
+
+            serializer = UserNotificationListSerializer(paginated_queryset, many=True)
+            return Response(
+                {
+                    'status': True,
+                    'data': {
+                        'results': serializer.data,
+                        'pagination': {
+                            'current_page': page,
+                            'page_size': page_size,
+                            'total_count': total_count,
+                            'total_pages': (total_count + page_size -1) // page_size,
+                            'has_next': end<total_count,
+                            'has_previous': page>0,
+                            'next_page': page+1 if end<total_count else None,
+                            'previous_page': page-1 if end>0 else None,
+                        }
+                    }
+
+                }, status=status.HTTP_200_OK
+            )
+
+        except Appointment.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "Appointment not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class AdminNotificationDetailView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            notification = get_object_or_404(
+                UserNotification,
+                pk=pk,
+                user=request.user
+            )
+            serializer = UserNotificationSerializer(notification)
+            return Response(
+                {
+                    'status': True,
+                    'data': serializer.data
+                }, status=status.HTTP_200_OK
+            )
+        except UserNotification.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "User notification not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+    def patch(self, request, pk):
+        try:
+            notification = get_object_or_404(
+                UserNotification,
+                pk=pk,
+                user=request.user
+            )
+
+            if 'is_read' in request.data:
+                notification.is_read = request.data.get('is_read', notification.is_read)
+                notification.save()
+
+                serializer = UserNotificationSerializer(notification)
+                return Response(
+                    {
+                        'status': True,
+                        'data': serializer.data
+                    }, status=status.HTTP_200_OK
+                )
+        except UserNotification.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "User notification not found."
+                }
+            )
+
+    def delete(self, request, pk):
+        try:
+            notification = get_object_or_404(
+                UserNotification,
+                pk=pk,
+                user=request.user
+            )
+
+            notification.delete()
+
+            return Response(
+                {
+                    'status': True,
+                    'message': "User notification deleted."
+                }, status=status.HTTP_200_OK
+            )
+        except UserNotification.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "User notification not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+class MarkNotificationsReadView(APIView):
+    permission_classes = [IsAdmin]
+    def post(self, request):
+        try:
+            user = request.user
+            notification_ids = request.data.get('notification_ids', [])
+
+            if not notification_ids:
+                queryset = UserNotification.objects.filter(user=user, is_read=False)
+                count = queryset.count()
+                queryset.update(is_read=True)
+
+                return Response(
+                    {
+                        'status': True,
+                        'message': f"All {count} notifications marked as read."
+                    }, status=status.HTTP_200_OK
+                )
+
+            existing_ids = UserNotification.objects.filter(user=user, id__in=notification_ids).values_list('id', flat=True)
+
+            invalid_ids = set(notification_ids) - set(existing_ids)
+
+            if invalid_ids:
+                return Response(
+                    {
+                        'status': False,
+                        'message': "Has Invalid ids.",
+                        'data': invalid_ids
+                    }, status=status.HTTP_400_BAD_REQUEST
+                )
+            queryset = UserNotification.objects.filter(
+                user=user,
+                id__in=notification_ids,
+                is_read=False
+            )
+            count = queryset.count()
+            queryset.update(is_read=True)
+
+            return Response(
+                {
+                    'status': True,
+                    'message': f"All {count} notifications marked as read."
+
+                }, status=status.HTTP_200_OK
+            )
+
+        except UserNotification.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "User notification not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class UnreadNotificationCountView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        try:
+            user = request.user
+            unread_count = UserNotification.objects.filter(
+                user=user,
+                is_read=False
+            ).count()
+
+            return Response(
+                {
+                    'status': True,
+                    'data': unread_count
+                }, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    'status': False,
+                    'message': 'Failed to get unread count'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

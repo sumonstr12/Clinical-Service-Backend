@@ -3,6 +3,9 @@ from rest_framework import serializers
 from .models import *
 from users.models import *
 
+from django.utils import timezone
+import datetime
+
 
 class DoctorRequestViewSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
@@ -130,4 +133,79 @@ class CaregiverDetailViewSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     email = serializers.EmailField(source='user.email')
     phone = serializers.CharField(source='user.phone')
-    
+
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    notification = NotificationSerializer(read_only=True)
+    formatted_created_at = serializers.SerializerMethodField()
+    formatted_updated_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserNotification
+        fields = [
+            "id",
+            'user',
+            'notification',
+            'is_read',
+            'created_at',
+            'updated_at',
+            'formatted_created_at',
+            'formatted_updated_at'
+
+        ]
+        read_only_fields = ['user', 'notification', 'created_at', 'updated_at']
+
+    def get_formatted_created_at(self, obj):
+        now = timezone.now()
+        diff = now - obj.created_at
+
+        if diff.days > 7:
+            return obj.created_at.strftime('%m/%d/%Y')
+        elif diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago."
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago."
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago."
+        else:
+            return "Just now."
+
+    def get_formatted_updated_at(self, obj):
+            return obj.updated_at.strftime("%b %d, %Y at %I:%M %p ")
+
+class UserNotificationListSerializer(serializers.ModelSerializer):
+    notification_title = serializers.CharField(source='notification.title')
+    notification_content = serializers.CharField(source='notification.content')
+    notification_created_at = serializers.DateTimeField(source='notification.created_at')
+    formatted_time = serializers.SerializerMethodField()
+    class Meta:
+        model = UserNotification
+        fields = ['id', 'notification_title', 'notification_content', 'notification_created_at', 'is_read', 'formatted_time']
+
+
+    def get_formatted_time(self, obj):
+        now = timezone.now()
+        diff = now - obj.created_at
+        if diff.days > 7:
+            return obj.created_at.strftime('%b %d, %Y')
+        elif diff.days > 0:
+            return f"day{'s' if diff.days > 1 else ''} ago."
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago."
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago."
+        else:
+            return "Just now."
+
+
+
