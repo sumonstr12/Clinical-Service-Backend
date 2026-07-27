@@ -101,6 +101,7 @@ class AppointmentGrant(models.Model):
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='grants')
     accept_date = models.DateField()
     reject_reason = models.TextField(blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.appointment.provider.user.full_name} -> {self.reject_reason}"
