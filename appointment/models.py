@@ -3,7 +3,7 @@ from users.models import *
 from django.conf import settings
 from django.utils import timezone
 from users.models import *
-
+from users.models import User
 
 User = settings.AUTH_USER_MODEL
 
@@ -97,6 +97,13 @@ class Appointment(models.Model):
     def __str__(self):
         return f"{self.patient} -> {self.provider} ({self.appointment_date})"
     
+class AppointmentGrant(models.Model):
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='grants')
+    accept_date = models.DateField()
+    reject_reason = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.appointment.provider.user.full_name} -> {self.reject_reason}"
 
 class Prescription(models.Model):
     pass
