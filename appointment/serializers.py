@@ -83,7 +83,8 @@ class AppointmentSlotViewSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     provider = AvailableDoctorSerializer(read_only=True)
     patient = PatientProfileViewSerializer(read_only=True)
+    caregiver = CareGiverProfileViewSerializer(read_only=True)
     slot = serializers.CharField(source='slot.start_time', read_only=True)
     class Meta:
         model = Appointment
-        fields = ['id', 'user', 'provider', 'patient', 'slot', 'issue_description', 'additional_notes', 'created_at', 'appointment_date', 'status']
+        fields = ['id', 'user', 'provider', 'patient', 'caregiver', 'slot', 'issue_description', 'additional_notes', 'created_at', 'appointment_date', 'status']
