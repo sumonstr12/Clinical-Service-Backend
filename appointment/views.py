@@ -358,3 +358,26 @@ class ViewAppointmentsUsersView(APIView):
                 "data": serializer.data
             }, status=status.HTTP_200_OK
         )
+
+class AppointmentViewDoctor(APIView):
+    permission_classes = [IsHealthCareProvider]
+    def get(self, request):
+        try:
+            provider = request.user.healthcareprovider
+            appointments = Appointment.objects.filter(provider=provider).select_related('patient', 'slot')
+            serializer = AppointmentSlotViewSerializer(appointments, many=True)
+            return Response(
+                {
+                    "status": True,
+                    "data": serializer.data
+
+                }, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                    "errors": str(e)
+                }
+            )

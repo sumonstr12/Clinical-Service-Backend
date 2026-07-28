@@ -3,8 +3,12 @@ import random
 from django.contrib.auth.models import update_last_login
 from django.shortcuts import render
 from rest_framework.views import APIView
+
+from appointment.models import Appointment
+from .models import User
 from .serializers import *
 from .models import *
+from appointment.models import *
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
@@ -26,11 +30,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 User = get_user_model()
 
 
-import random
-from django.core.cache import cache
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+
 
 class TempoDataStoredView(APIView):
 
@@ -1011,3 +1011,39 @@ class CookieTokenRefreshView(TokenRefreshView):
         return Response(serializer.validated_data)
     
 
+
+
+
+today = timezone.localdate()
+class DoctorDashboardView(APIView):
+    # permission_classes = [IsHealthCareProvider]
+    def get(self, request):
+        try:
+            user = request.user
+            print(user.role, user.full_name)
+            provider = HealthCareProvider.objects.get(user=user)
+            total_patient = HealthCareProvider.objects.filter(user=user).count()
+            appointment_today = Appointment.objects.filter(provider=provider, appointment_date__date=today).count()
+            pending_request_count = AppointmentGrant.objects.filter(appointment__provider=provider, is_accepted=False).count()
+
+            # total recoverd patient will update soon
+
+            return Response(
+                {
+                    "status" : True,
+                    "data" : {
+                        "total_patient" : total_patient,
+                        "appointment_today" : appointment_today,
+                        "pending_request_count" : pending_request_count,
+                        "total_recovered_patient" : 3
+                    }
+                }, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            print(str(e))
+            return Response(
+                {
+                    "status" : False,
+                    "error" : str(e)
+                }
+            )

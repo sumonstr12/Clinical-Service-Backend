@@ -29,6 +29,8 @@ urlpatterns = [
     path('caregiver-reject', CaregiverRequestRejectView.as_view(), name='caregiver-reject'),
     path('otp-resend', OtpResendView.as_view(), name='otp-resend'),
 
+    # doctor dashboard views urls
+    path('doctor-dashboard/', DoctorDashboardView.as_view(), name='doctor-dashboard'),
 
     path('token/refresh/', CookieTokenRefreshView.as_view()),
 ]
