@@ -485,6 +485,5 @@ class StatusUpdateByDoctor(APIView):
                 {
                     'status': False,
                     'message': "Appointment not found.",
-                    'errors' : str(e)
                 }, status=status.HTTP_404_NOT_FOUND
             )
