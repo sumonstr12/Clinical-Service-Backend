@@ -23,5 +23,6 @@ urlpatterns = [
 
     # Doctor Appointment Views url
     path('doctor/appointment/view-list/', AppointmentViewDoctor.as_view(), name="doctor/appointment/view/"),
+    path('doctor/appointment/approval/', StatusUpdateByDoctor.as_view(), name="doctor/appointment/approval/"),
 
 ]

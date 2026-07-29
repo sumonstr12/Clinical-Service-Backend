@@ -435,3 +435,56 @@ class AppointmentViewDoctor(APIView):
                     'errors' : str(e)
                 }, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class StatusUpdateByDoctor(APIView):
+    permission_classes = [IsHealthCareProvider]
+    def post(self, request):
+        try:
+            appointment_id = request.data.get('appointment_id')
+            new_status = request.data.get('status')
+            doctor = request.user.healthcareprovider
+            if not appointment_id:
+                return Response(
+                    {
+                        'status': False,
+                        'message': "Appointment ID not found.",
+                    }, status=status.HTTP_404_NOT_FOUND
+                )
+            print(appointment_id)
+            print(new_status)
+            print(doctor)
+
+            appointment = Appointment.objects.get(id=appointment_id, provider=doctor)
+
+            valid_statuses = []
+            for choice in Appointment.STATUS_CHOICES:
+                valid_statuses.append(choice[0])
+
+            if new_status not in valid_statuses:
+                print('not a valid status')
+                return Response(
+                    {
+                        'status': False,
+                        'message': "Invalid status.",
+
+                    }, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            appointment.status = new_status
+            appointment.save()
+            return Response(
+                {
+                    'status': True,
+                    'message': "Appointment updated successfully.",
+                }, status=status.HTTP_200_OK
+            )
+
+        except Appointment.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "Appointment not found.",
+                    'errors' : str(e)
+                }, status=status.HTTP_404_NOT_FOUND
+            )
