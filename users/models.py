@@ -160,8 +160,8 @@ class CaregiverPatientRelationship(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        unique_together = ['patient', 'caregiver']
+    # class Meta:
+    #     unique_together = ['patient', 'caregiver']
 
     def __str__(self):
         return f"{self.caregiver.user.username} is {self.relationship_type} of {self.patient.user.username}"

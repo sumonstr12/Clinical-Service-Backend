@@ -1,3 +1,5 @@
+from logging import exception
+
 from django.shortcuts import render
 from .models import *
 from .serializers import *
@@ -277,7 +279,27 @@ class CreateAppointmentView(APIView):
     def post(self, request):
 
         user = request.user
+        print(user.caregiver)
         data = request.data.copy()
+
+        patient_id = request.data.get("patient_id")
+        patient = Patient.objects.get(id=patient_id)
+        print(patient)
+        is_related = CaregiverPatientRelationship.objects.filter(
+            caregiver=user.caregiver,
+            patient=patient,
+            status="active"
+        ).exists()
+        print(is_related)
+
+        if not is_related:
+            return Response(
+                {
+                "status": False,
+                "message": "Patient id not match.",
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
         data['patient'] = None
         data['caregiver'] = None
@@ -292,9 +314,14 @@ class CreateAppointmentView(APIView):
             data['patient'] = patient.id
 
         elif hasattr(user, 'caregiver'):
+            if is_related:
+                patient = Patient.objects.get(id=patient_id)
 
+            print(f"Patient ID: {patient.id}")
+            data['patient'] = patient.id
             caregiver = user.caregiver
             data['caregiver'] = caregiver.id
+            print(f"Caregiver ID: {caregiver.id}")
 
         else:
             return Response(
@@ -308,7 +335,7 @@ class CreateAppointmentView(APIView):
             if patient:
                 appointment = serializer.save(patient=patient)
             else:
-                appointment = serializer.save(caregiver=caregiver)
+                appointment = serializer.save(patient=patient, caregiver=caregiver)
 
 
             return Response(
@@ -363,21 +390,48 @@ class AppointmentViewDoctor(APIView):
     permission_classes = [IsHealthCareProvider]
     def get(self, request):
         try:
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
             provider = request.user.healthcareprovider
             appointments = Appointment.objects.filter(provider=provider).select_related('patient', 'slot')
-            serializer = AppointmentSlotViewSerializer(appointments, many=True)
+            if search:
+                appointments = appointments.filter(
+                    Q(patient__user__full_name__icontains=search) |
+                    Q(patient__user__username__icontains=search) |
+                    Q(patient__user__email__icontains=search) |
+                    Q(provider__user__full_name__icontains=search) |
+                    Q(provider__user__username__icontains=search) |
+                    Q(issue_description__icontains=search) |
+                    Q(status__icontains=search)
+                )
+            total_count = appointments.count()
+            start = (page - 1) * limit
+            end = start + limit
+            appointments = appointments[start:end]
+
+            serializer = AppointmentSlotViewSerializer(
+                appointments,
+                many=True
+            )
+
+            total_pages = ( total_count + limit - 1 ) // limit
+
             return Response(
                 {
-                    "status": True,
-                    "data": serializer.data
-
+                    'status': True,
+                    'count': total_count,
+                    'total_pages': total_pages,
+                    'current_page': page,
+                    'data': serializer.data
                 }, status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except exception as e:
             return Response(
-                {
-                    "status": False,
-                    "message": "Failed to load data.",
-                    "errors": str(e)
-                }
+            {
+                    'status': False,
+                    'message': "Appointment not found.",
+                    'errors' : str(e)
+                }, status=status.HTTP_404_NOT_FOUND
             )

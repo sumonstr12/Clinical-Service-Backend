@@ -85,6 +85,26 @@ class AppointmentSlotViewSerializer(serializers.ModelSerializer):
     patient = PatientProfileViewSerializer(read_only=True)
     caregiver = CareGiverProfileViewSerializer(read_only=True)
     slot = serializers.CharField(source='slot.start_time', read_only=True)
+    patient_name = serializers.CharField(source='patient.user.full_name', read_only=True)
+    appointment_by = serializers.SerializerMethodField(read_only=True)
+    appointment_by_role = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Appointment
-        fields = ['id', 'user', 'provider', 'patient', 'caregiver', 'slot', 'issue_description', 'additional_notes', 'created_at', 'appointment_date', 'status']
+        fields = ['id', 'user', 'provider', 'patient', 'caregiver', 'slot', 'patient_name', 'appointment_by', 'appointment_by_role', 'issue_description', 'additional_notes', 'created_at', 'appointment_date', 'status']
+
+    def get_appointment_by(self, obj):
+        if obj.patient:
+            return obj.patient.user.full_name
+
+        if obj.caregiver:
+            return obj.caregiver.user.full_name
+
+        return None
+
+    def get_appointment_by_role(self, obj):
+        if obj.caregiver:
+            return obj.caregiver.user.role
+
+        if obj.patient:
+            return obj.patient.user.role

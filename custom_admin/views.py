@@ -595,7 +595,7 @@ class DoctorProfileView(APIView):
 
 
 class AppointmentListView(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def get(self, request):
         try:
             search = request.GET.get("search", "")
