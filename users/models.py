@@ -69,14 +69,33 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects=UserManager()
 
+class Patient(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    is_Onboarding_completed = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.user.full_name
 
 class MedicalProfile(models.Model):
+    Blood_Group_CHOICES = [
+        ('a_p' , 'A+'),
+        ('b_p' , 'B+'),
+        ('o_p' , 'O+'),
+        ('ab_p' , 'AB+'),
+        ('a_n' , 'A-'),
+        ('b_n' , 'B-'),
+        ('o_n' , 'O-'),
+        ('ab_n' , 'AB-'),
+    ]
+    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name="medical_profile")
     cancer_type = models.CharField(max_length=200, blank=True)
     cancer_treatment_type = models.CharField(max_length=400, blank=True)
     medicine_and_dose = models.CharField(max_length=300, blank=True)
     chemo_history_count = models.IntegerField(blank=True, null=True)
-    blood_group = models.CharField(max_length=200, blank=True)
+    blood_group = models.CharField(max_length=200,
+        blank=True,
+        choices=Blood_Group_CHOICES
+    )
     height = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True)
     weight = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
@@ -91,15 +110,7 @@ class MedicalProfile(models.Model):
             (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
         )
 
-class Patient(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    medical_profile = models.OneToOneField(
-        MedicalProfile, on_delete=models.CASCADE, null=True,blank=True
-    )
-    is_Onboarding_completed = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.user.full_name
 
 
     

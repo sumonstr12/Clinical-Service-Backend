@@ -24,19 +24,6 @@ class RegistrationSerializer(serializers.Serializer):
      is_first_login = serializers.BooleanField(required=False)
      is_verified = serializers.BooleanField(required=False)
 
-
-     # Patient
-     cancer_type = serializers.CharField(required=False, allow_blank=True, default="")
-     cancer_treatment_type = serializers.CharField(required=False, allow_blank=True, default="")
-     medicine_and_dose = serializers.CharField(required=False, allow_blank=True, default="")
-     chemo_history_count = serializers.IntegerField(required=False, default=0)
-     blood_group = serializers.CharField(required=False, allow_blank=True, default="")
-     height = serializers.DecimalField(max_digits=5, decimal_places=2,required=False, default=0)
-     gender = serializers.CharField(required=False, allow_blank=True, default="")
-     weight = serializers.DecimalField(max_digits=5, decimal_places=2,required=False, default=0)
-     date_of_birth = serializers.DateField(required=False, allow_null=True)
-     region = serializers.CharField(required=False, allow_blank=True, default="")
-
      # HealthCareProvider
      specialization = serializers.CharField(required=False)
      qualification = serializers.CharField(required=False)
@@ -100,26 +87,10 @@ class RegistrationSerializer(serializers.Serializer):
                     phone = validated_data.pop("phone"),
                     role = role
                )
+               Patient.objects.create(user=user)
 
-               medical_fields = [
-                    'cancer_type', 'cancer_treatment_type', 'medicine_and_dose',
-                    'chemo_history_count', 'blood_group', 'height', 'gender', 'weight',
-                    'date_of_birth', 'region'
-               ]
 
-               medical_data = {}
-               for field in medical_fields:
-                    if field in validated_data:
-                         value = validated_data.pop(field, None)
 
-                         if value is not None:
-                              medical_data[field] = value
-
-               medical = MedicalProfile.objects.create(**medical_data)
-               Patient.objects.create(user=user, medical_profile = medical)
-               
-               
-          
           # elif role == User.Role.CAREGIVER:
 
           #      user = User.objects.create_user(
@@ -352,6 +323,7 @@ class FirstLoginSerializer(serializers.Serializer):
      cancer_treatment_type = serializers.CharField( allow_blank=True, default="")
      medicine_and_dose = serializers.CharField( allow_blank=True, default="")
      chemo_history_count = serializers.IntegerField( default=0)
+     blood_group = serializers.CharField(allow_blank=True, default="")
      height = serializers.DecimalField(max_digits=5, decimal_places=2, default=0)
      gender = serializers.CharField(allow_blank=True, default="")
      weight = serializers.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -366,6 +338,7 @@ class FirstLoginSerializer(serializers.Serializer):
                'cancer_treatment_type',
                'medicine_and_dose',
                'chemo_history_count',
+               'blood_group',
                'height',
                'gender',
                'weight',
@@ -399,9 +372,17 @@ class FirstLoginSerializer(serializers.Serializer):
           user = self.context["request"].user
 
           with transaction.atomic():
-               patient = Patient.objects.select_related("medical_profile").get(user=user)
-               medical = patient.medical_profile
+               try:
+                    patient = Patient.objects.get(user=user)
+               except Patient.DoesNotExist:
+                    raise serializers.ValidationError({
+                         "patient": "Patient profile not found for this user."
+                    })
 
+               try:
+                    medical = patient.medical_profile
+               except MedicalProfile.DoesNotExist:
+                    medical = MedicalProfile.objects.create(patient=patient)
                print(patient)
 
 
@@ -410,6 +391,7 @@ class FirstLoginSerializer(serializers.Serializer):
                     "cancer_treatment_type",
                     "medicine_and_dose",
                     "chemo_history_count",
+                    "blood_group",
                     "height",
                     "weight",
                     "date_of_birth",
@@ -423,7 +405,7 @@ class FirstLoginSerializer(serializers.Serializer):
 
                medical.save()
 
-               user.is_first_login = "False"
+               user.is_first_login = False
                user.save()
 
           return user
