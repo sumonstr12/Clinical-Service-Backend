@@ -20,3 +20,11 @@ class MedicalFile(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
+class PatientCheckup(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(HealthCareProvider, on_delete=models.CASCADE)
+    checkup_date = models.DateTimeField(auto_now_add=True)
+    patient_progress = models.PositiveIntegerField(default=0)
+    notes = models.TextField()
+
+
