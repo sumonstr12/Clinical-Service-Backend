@@ -1,6 +1,8 @@
 from logging import exception
 
 from django.shortcuts import render
+
+from users.models import User
 from .models import *
 from .serializers import *
 from rest_framework.views import APIView
@@ -233,7 +235,7 @@ class AvailabilitySlotView(APIView):
         try:
 
             date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-            day = (date_obj.weekday() + 2) % 7
+            day = ((date_obj.weekday() + 2) % 7) + 1
 
             available_slots = DoctorAvailable.objects.filter(
                 doctor_id=doctor_id,
@@ -279,26 +281,26 @@ class CreateAppointmentView(APIView):
     def post(self, request):
 
         user = request.user
-        print(user.caregiver)
         data = request.data.copy()
 
-        patient_id = request.data.get("patient_id")
-        patient = Patient.objects.get(id=patient_id)
-        print(patient)
-        is_related = CaregiverPatientRelationship.objects.filter(
-            caregiver=user.caregiver,
-            patient=patient,
-            status="active"
-        ).exists()
-        print(is_related)
+        if user.role == 'CAREGIVER':
+            patient_id = request.data.get("patient_id")
+            patient = Patient.objects.get(id=patient_id)
 
-        if not is_related:
-            return Response(
-                {
-                "status": False,
-                "message": "Patient id not match.",
-                }, status=status.HTTP_400_BAD_REQUEST
-            )
+            is_related = CaregiverPatientRelationship.objects.filter(
+                caregiver=user.caregiver,
+                patient=patient,
+                status="active"
+            ).exists()
+
+
+            if not is_related:
+                return Response(
+                    {
+                    "status": False,
+                    "message": "Patient id not match.",
+                    }, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
         data['patient'] = None
