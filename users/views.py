@@ -12,7 +12,7 @@ from appointment.models import *
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from rest_framework import request, status
+from rest_framework import request, status, response
 from django.core.cache import cache
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -468,22 +468,14 @@ class CaregiverRequestListView(APIView):
     permission_classes = [IsPatient]
 
     def get(self, request):
-
-        if not request.user.is_authenticated:
-            return Response(
-                {
-                    "status" : False,
-                    "message" : "Authentication credentials were not provided."
-                }, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        patient = Patient.objects.filter(user=request.user).first()
-        if not patient:
+        try:
+            patient = Patient.objects.filter(user=request.user).first()
+        except Patient.DoesNotExist:
             return Response(
                 {
                     "status" : False,
                     "message" : "Patient Not Found."
-                }, status=status.HTTP_404_NOT_FOUND
+                },status=status.HTTP_404_NOT_FOUND
             )
 
         relationships = CaregiverPatientRelationship.objects.filter(
@@ -505,7 +497,7 @@ class CaregiverRequestListView(APIView):
 
 # approval view
 class ApproveCaregiverRequestView(APIView):
-
+    permission_classes = [IsPatient]
     def get(self, request, token):
         try:
             verification = CaregiverVerification.objects.get(token=token)
@@ -542,8 +534,9 @@ class ApproveCaregiverRequestView(APIView):
 class CaregiverRequestRejectView(APIView):
     permission_classes = [IsPatient]
     def post(self, request):
-        caregiver_id = request.data.get("caregiver_id")
-        if not caregiver_id:
+        caregiver_rel_id = request.data.get("caregiver_id")
+        print(caregiver_rel_id)
+        if not caregiver_rel_id:
             return Response(
                 {
                     "status" : False,
@@ -551,7 +544,8 @@ class CaregiverRequestRejectView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST
             )
 
-        caregiver = CareGiver.objects.filter(id=caregiver_id).first()
+        caregiver_rel = CaregiverPatientRelationship.objects.filter(id=caregiver_rel_id).first()
+        caregiver = caregiver_rel.caregiver
         if not caregiver:
             return Response(
                 {
@@ -1022,7 +1016,7 @@ class DoctorDashboardView(APIView):
             user = request.user
             print(user.role, user.full_name)
             provider = HealthCareProvider.objects.get(user=user)
-            total_patient = HealthCareProvider.objects.filter(user=user).count()
+            total_patient = Appointment.objects.filter(provider=provider).values("patient").distinct().count()
             appointment_today = Appointment.objects.filter(provider=provider, appointment_date__date=today).count()
             pending_request_count = AppointmentGrant.objects.filter(appointment__provider=provider, is_accepted=False).count()
 

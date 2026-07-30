@@ -31,12 +31,13 @@ class RegistrationSerializer(serializers.Serializer):
      cv = serializers.FileField(required=False)
      license_number = serializers.CharField(required=False)
      license_count = serializers.IntegerField(required=False)
+     date_of_birth = serializers.DateField(required=False)
+     gender = serializers.CharField(required=False)
 
 
      def validate(self, data):
           role = data.get("role")
 
-          # print(User.Role.PATIENT)
           if role == User.Role.PATIENT:
                required_fields = [
                     
@@ -60,7 +61,7 @@ class RegistrationSerializer(serializers.Serializer):
                     'license_count',
                     'date_of_birth',
                ]
-          
+
 
           for field in required_fields:
                if field not in data:
