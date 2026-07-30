@@ -405,7 +405,7 @@ class ApprovedDoctorDetailView(APIView):
         
 
 class PatientListView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin | IsHealthCareProvider]
 
     def get(self, request):
 
@@ -415,12 +415,30 @@ class PatientListView(APIView):
             page = int(request.GET.get("page", 1))
             limit = int(request.GET.get("limit", 10))
 
-            patients = Patient.objects.all().order_by("id")
+            user = request.user
+            if user.role == 'ADMIN':
+                patients = Patient.objects.all().order_by("id")
+            elif user.role == 'HEALTHCARE':
+                doctor = user.healthcareprovider
+                print(doctor)
+                patients = Patient.objects.filter(
+                        patient_appointments__provider=doctor
+                    ).distinct()
+            else:
+                return Response(
+                    {
+                        "status": False,
+                        "message": "User not found."
+                    }, status=status.HTTP_404_NOT_FOUND
+                )
+
+
             
             if search:
                 patients = patients.filter(
                     Q(user__full_name__icontains=search) |
-                    Q(user__username__icontains=search)
+                    Q(user__username__icontains=search) |
+                    Q(user__phone__icontains=search)
                 )   
 
             total_count = patients.count()
@@ -551,7 +569,7 @@ class CaregiverDetailView(APIView):
             )
 
 class PatientDetailView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin | IsHealthCareProvider]
     def get(self, request, pk):
         try:
             patient = Patient.objects.get(id=pk)
