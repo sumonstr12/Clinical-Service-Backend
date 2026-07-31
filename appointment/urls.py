@@ -11,6 +11,7 @@ urlpatterns = [
     path('doctor/available-slots/', AvailabilitySlotView.as_view(), name="doctor/available-slots/"),
     # path('appointment/slots-view/', AvailabilitySlotView.as_view(), name="appointment/slots-view/"),
     path('appointment/create/', CreateAppointmentView.as_view(), name="appointment/create/"),
+    path('related-patient-list/', RelatedPatientCaregiverView.as_view(), name="related-patient-list/"),
     
 
     # User appointment view

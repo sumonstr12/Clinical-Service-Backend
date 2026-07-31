@@ -3,6 +3,7 @@ from rest_framework import serializers
 from users.serializers import *
 from custom_admin.serializers import *
 from users.serializers import *
+from datetime import datetime
 
 
 
@@ -57,7 +58,15 @@ class AppointmentSerializer(serializers.ModelSerializer):
         slot = data.get('slot')
         appointment_date = data.get('appointment_date')
 
-        if appointment_date < timezone.now():
+        appointment_datetime = timezone.make_aware(
+            datetime.combine(
+                appointment_date.date(),
+                slot.start_time
+            )
+        )
+
+
+        if appointment_datetime < timezone.now():
             raise serializers.ValidationError("Appointment date cannot be in the past.")
         
         if appointment_date > timezone.now() + timezone.timedelta(days=20):

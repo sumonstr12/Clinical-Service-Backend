@@ -2,9 +2,10 @@ from logging import exception
 
 from django.shortcuts import render
 
-from users.models import User
+from users.models import *
 from .models import *
 from .serializers import *
+from custom_admin.serializers import *
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -312,18 +313,15 @@ class CreateAppointmentView(APIView):
         if hasattr(user, 'patient'):
 
             patient = user.patient
-            print(f"Patient ID: {patient}")
             data['patient'] = patient.id
 
         elif hasattr(user, 'caregiver'):
             if is_related:
                 patient = Patient.objects.get(id=patient_id)
 
-            print(f"Patient ID: {patient.id}")
             data['patient'] = patient.id
             caregiver = user.caregiver
             data['caregiver'] = caregiver.id
-            print(f"Caregiver ID: {caregiver.id}")
 
         else:
             return Response(
@@ -353,6 +351,35 @@ class CreateAppointmentView(APIView):
                 "message": "Failed to create appointment",
                 "errors": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST
+        )
+
+class RelatedPatientCaregiverView(APIView):
+    permission_classes = [IsCaregiver]
+    def get(self, request):
+        caregiver = request.user.caregiver
+        try:
+
+            patients = Patient.objects.filter(
+                caregiver_relations__caregiver=caregiver
+            ).distinct()
+
+        except Exception as e:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to load data.",
+                }
+            )
+
+        serializer = PatientListSerializer(
+            patients,
+            many=True
+        )
+        return Response(
+            {
+                "status": True,
+                "data": serializer.data
+            }, status=status.HTTP_200_OK
         )
 
 
