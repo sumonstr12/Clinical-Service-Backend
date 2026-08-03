@@ -208,6 +208,10 @@ class CaregiverRegistrationSerializer(serializers.Serializer):
 # serializer for add new patient with caregiver relation
 class CaregiverPatientRelationshipSerializer(serializers.ModelSerializer):
     patient_email = serializers.EmailField(write_only=True)
+
+    is_primary = serializers.BooleanField(required=False)
+    can_book_appointment = serializers.BooleanField(required=False)
+    can_view_medical_records = serializers.BooleanField(required=False)
     
     class Meta:
         model = CaregiverPatientRelationship

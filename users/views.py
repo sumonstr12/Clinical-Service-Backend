@@ -323,38 +323,60 @@ class CaregiverRegistrationView(APIView):
 class AddNewPatientRelationView(APIView):
     permission_classes=[IsCaregiver]
     def post(self, request):
+        action = request.data.get("action")
+        if action == "check_patient":
+            return self.check_patient(request)
+        elif action == "create_patient_relation":
+            return self.create_patient_relation(request)
+        else:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Action Not Allowed."
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+    def check_patient(self, request):
         patient_email = request.data.get("patient_email")
-        
         if not patient_email:
             return Response(
                 {
                     "status" : False,
                     "message" : "Email Field is required."
-                },status=status.HTTP_400_BAD_REQUEST
+                }, status=status.HTTP_400_BAD_REQUEST
             )
-
         patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
-        print(patient)
         if not patient:
             return Response(
                 {
-                    "status" : False,
-                    "message" : "Patient Not Found With this email."
-                },status=status.HTTP_400_BAD_REQUEST
+                    "status": False,
+                    "message": "Patient Not Found With this email."
+                }, status=status.HTTP_400_BAD_REQUEST
             )
-        
+
+        return Response(
+            {
+                "status": True
+            }, status=status.HTTP_200_OK
+        )
+
+    def create_patient_relation(self, request):
+        patient_email = request.data.get("patient_email")
+        patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
 
         serializer = CaregiverPatientRelationshipSerializer(
             data=request.data,
-            context={'request': request} 
+            context={'request': request}
         )
-        
+
         if serializer.is_valid():
-            relation = serializer.save()  
+            relation = serializer.save()
             return Response({
                 "status": True,
-                "message": "Patient relationship request submitted successfully.",
+                "message": "Approve request submitted successfully.",
                 "data": {
+                    "patient_name": relation.patient.user.full_name,
                     "patient": relation.patient.user.email,
                     "caregiver": relation.caregiver.user.email,
                     "relationship_type": relation.relationship_type,
@@ -364,7 +386,7 @@ class AddNewPatientRelationView(APIView):
                     "can_view_medical_records": relation.can_view_medical_records
                 }
             }, status=status.HTTP_201_CREATED)
-        
+
         return Response({
             "status": False,
             "errors": serializer.errors
