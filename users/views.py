@@ -347,6 +347,34 @@ class AddNewPatientRelationView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST
             )
         patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
+
+        is_already_related = CaregiverPatientRelationship.objects.filter(
+            caregiver=request.user.caregiver,
+            patient=patient,
+            status__in = ["active", "pending", "inactive"],
+        ).exists()
+        is_already_rejected = CaregiverPatientRelationship.objects.filter(
+            caregiver=request.user.caregiver,
+            patient=patient,
+            status="rejected"
+        ).exists()
+
+        if is_already_rejected:
+            return Response(
+                {
+                    'status' : False,
+                    "message" : "Patient already rejected."
+                }
+            )
+
+        if is_already_related:
+            return Response(
+                {
+                    'status' : False,
+                    "message" : "Patient already related.Try another patient."
+                }
+            )
+
         if not patient:
             return Response(
                 {
@@ -549,6 +577,33 @@ class ApproveCaregiverRequestView(APIView):
             {
                 "status" : True,
                 "message" : "Request Approved.. "
+            }, status=status.HTTP_200_OK
+        )
+
+
+    # code for update status of relation between caregiver and patient
+    def post(self, request, token):
+        new_status = request.data.get("status")
+        try:
+            verification = CaregiverVerification.objects.get(token=token)
+        except CaregiverVerification.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to Update.Try again!"
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+        relationship = verification.relationship
+        relationship.status = new_status
+        relationship.save()
+
+        verification.is_used = False
+        verification.save()
+
+        return Response(
+            {
+                "status": True,
+                "message": "update successful."
             }, status=status.HTTP_200_OK
         )
 
