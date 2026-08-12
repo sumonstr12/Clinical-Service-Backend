@@ -612,7 +612,6 @@ class CaregiverRequestRejectView(APIView):
     permission_classes = [IsPatient]
     def post(self, request):
         caregiver_rel_id = request.data.get("caregiver_id")
-        print(caregiver_rel_id)
         if not caregiver_rel_id:
             return Response(
                 {
@@ -620,8 +619,16 @@ class CaregiverRequestRejectView(APIView):
                     "message" : "Caregiver ID is required."
                 }, status=status.HTTP_400_BAD_REQUEST
             )
+        try:
+            caregiver_rel = CaregiverPatientRelationship.objects.filter(id=caregiver_rel_id).first()
+        except CaregiverPatientRelationship.DoesNotExist:
+            return Response(
+                {
+                    "status" : False,
+                    "message" : "Caregiver ID does not exist."
+                }
+            )
 
-        caregiver_rel = CaregiverPatientRelationship.objects.filter(id=caregiver_rel_id).first()
         caregiver = caregiver_rel.caregiver
         if not caregiver:
             return Response(

@@ -884,3 +884,55 @@ class UnreadNotificationCountView(APIView):
                     'message': 'Failed to get unread count'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class RecentAppointmentsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        try:
+            search = request.GET.get("search", "")
+            page = int(request.GET.get("page", 1))
+            limit = int(request.GET.get("limit", 10))
+
+            appointments = Appointment.objects.all().order_by("id")
+            if search:
+                appointments = appointments.filter(
+                    Q(patient__user__full_name__icontains=search) |
+                    Q(patient__user__username__icontains=search) |
+                    Q(patient__user__email__icontains=search) |
+                    Q(provider__user__full_name__icontains=search) |
+                    Q(provider__user__username__icontains=search) |
+                    Q(issue_description__icontains=search) |
+                    Q(status__icontains=search)
+                )
+            total_count = appointments.count()
+            start = (page - 1) * limit
+            end = start + limit
+            appointments = appointments[start:end]
+
+            serializer = AppointmentSlotViewSerializer(
+                appointments,
+                many=True
+            )
+
+            total_pages = (
+                                  total_count + limit - 1
+                          ) // limit
+
+            return Response(
+                {
+                    'status': True,
+                    'count': total_count,
+                    'total_pages': total_pages,
+                    'current_page': page,
+                    'data': serializer.data
+                }, status=status.HTTP_200_OK
+            )
+        except Appointment.DoesNotExist:
+            return Response(
+                {
+                    'status': False,
+                    'message': "Appointment not found."
+                }, status=status.HTTP_404_NOT_FOUND
+            )
