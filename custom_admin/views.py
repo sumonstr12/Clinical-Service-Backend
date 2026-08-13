@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.views import APIView
 from users.models import *
 from appointment.models import *
@@ -663,8 +663,8 @@ class AppointmentListView(APIView):
             )
 
 
-class AdminNotificationListView(APIView):
-    permission_classes = [IsAdmin]
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         try:
             user = request.user
@@ -727,8 +727,8 @@ class AdminNotificationListView(APIView):
             )
 
 
-class AdminNotificationDetailView(APIView):
-    permission_classes = [IsAdmin]
+class NotificationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk, *args, **kwargs):
         try:
             notification = get_object_or_404(
@@ -804,7 +804,7 @@ class AdminNotificationDetailView(APIView):
             )
 
 class MarkNotificationsReadView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         try:
             user = request.user
@@ -860,7 +860,7 @@ class MarkNotificationsReadView(APIView):
 
 
 class UnreadNotificationCountView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:

@@ -1,5 +1,7 @@
 
 from rest_framework import serializers
+
+from Utilis.create_notifications import create_notification
 from .models import *
 from custom_admin.models import *
 from django.db import transaction
@@ -90,6 +92,16 @@ class RegistrationSerializer(serializers.Serializer):
                )
                Patient.objects.create(user=user)
 
+               noti_data = {
+                    'title': "Registration Successful.",
+                    'content': f"{user.full_name}, Welcome to the Clinical System.",
+               }
+
+               notification = Notification.objects.create(**noti_data)
+
+               UserNotification.objects.create(user=user, notification=notification)
+
+
 
 
           # elif role == User.Role.CAREGIVER:
@@ -139,24 +151,32 @@ class RegistrationSerializer(serializers.Serializer):
                     license_count = validated_data.pop("license_count")
                )
 
-               noti_data = {
-                    'title': "Doctor request for approval.",
-                    'content': f"Doctor {user.full_name} request for approval. Review the documents and approve it.",
-               }
-
-               notification = Notification.objects.create(**noti_data)
-
-
                admins = User.objects.filter(role=User.Role.ADMIN)
+               create_notification(
+                   "Doctor request for approval.",
+                   f"Doctor {user.full_name} request for approval. Review the documents and approve it.",
+                   admins
+               )
 
-               user_notifications = []
-               for admin in admins:
-                   user_notifications.append(UserNotification(user=admin, notification=notification))
-
-               UserNotification.objects.bulk_create(user_notifications)
-
-               # bulk_create increses performance of database query.
-               # it decreses ececution time almost 70-80%
+               #
+               # noti_data = {
+               #      'title': "Doctor request for approval.",
+               #      'content': f"Doctor {user.full_name} request for approval. Review the documents and approve it.",
+               # }
+               #
+               # notification = Notification.objects.create(**noti_data)
+               #
+               #
+               # admins = User.objects.filter(role=User.Role.ADMIN)
+               #
+               # user_notifications = []
+               # for admin in admins:
+               #     user_notifications.append(UserNotification(user=admin, notification=notification))
+               #
+               # UserNotification.objects.bulk_create(user_notifications)
+               #
+               # # bulk_create increses performance of database query.
+               # # it decreses ececution time almost 70-80%
 
 
 

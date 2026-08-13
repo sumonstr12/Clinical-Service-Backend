@@ -24,8 +24,8 @@ urlpatterns = [
     path('appointment-list/', AppointmentListView.as_view(), name='appointment-list'),
 
     # notification related
-    path('notifications/', AdminNotificationListView.as_view(), name='notifications-list'),
-    path('notifications/<int:pk>/', AdminNotificationDetailView.as_view(), name='notifications-detail'),
+    path('notifications/', NotificationListView.as_view(), name='notifications-list'),
+    path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notifications-detail'),
 
     path('notifications/mark-read/', MarkNotificationsReadView.as_view(), name='mark-notifications-read'),
     path('notifications/unread-count/', UnreadNotificationCountView.as_view(), name='unread-count'),

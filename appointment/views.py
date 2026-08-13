@@ -284,6 +284,32 @@ class CreateAppointmentView(APIView):
         user = request.user
         data = request.data.copy()
 
+        doctor_id = request.data.get("provider")
+        appointment_date = request.data.get("appointment_date")
+        slot_id = request.data.get("slot")
+
+        date_obj = datetime.strptime(appointment_date, "%Y-%m-%d")
+        date = date_obj.strftime("%b %d")
+
+        app_time = TimeSlot.objects.get(id=slot_id).start_time
+        formatted_time = app_time.strftime("%I:%M %p")
+
+
+        try:
+
+            doctor = HealthCareProvider.objects.get(id=doctor_id)
+
+
+        except HealthCareProvider.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "TimeSlot or Doctor does not exist.",
+                }
+            )
+
+
+
         if user.role == 'CAREGIVER':
             patient_id = request.data.get("patient_id")
             patient = Patient.objects.get(id=patient_id)
@@ -334,8 +360,28 @@ class CreateAppointmentView(APIView):
         if serializer.is_valid():
             if patient:
                 appointment = serializer.save(patient=patient)
+
+                user = patient.user
+                create_notification(
+                    "Appointment Confirmed!",
+                    f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
+                    user
+                )
+
+
             else:
                 appointment = serializer.save(patient=patient, caregiver=caregiver)
+
+                users = []
+                users.append(patient.user)
+                users.append(caregiver.user)
+
+                create_notification(
+                    "Appointment Confirmed!",
+                    f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
+                    users
+                )
+
 
 
             return Response(
