@@ -29,5 +29,9 @@ urlpatterns = [
 
     path('notifications/mark-read/', MarkNotificationsReadView.as_view(), name='mark-notifications-read'),
     path('notifications/unread-count/', UnreadNotificationCountView.as_view(), name='unread-count'),
+    path('recent-appointments/', RecentAppointmentsView.as_view(), name='recent-appointments'),
+
+    path('dashboard/chart-data/', DashboardChartDataView.as_view(), name='dashboard-chart-data'),
+
 
 ]

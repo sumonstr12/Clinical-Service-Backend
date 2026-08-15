@@ -13,6 +13,12 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.db.models import Q
 
+from datetime import timedelta
+from django.utils import timezone
+
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+
 
 from users.serializers import *
 
@@ -891,21 +897,24 @@ class RecentAppointmentsView(APIView):
 
     def get(self, request):
         try:
-            search = request.GET.get("search", "")
+            days = request.GET.get("days", 7)
             page = int(request.GET.get("page", 1))
             limit = int(request.GET.get("limit", 10))
 
-            appointments = Appointment.objects.all().order_by("id")
-            if search:
-                appointments = appointments.filter(
-                    Q(patient__user__full_name__icontains=search) |
-                    Q(patient__user__username__icontains=search) |
-                    Q(patient__user__email__icontains=search) |
-                    Q(provider__user__full_name__icontains=search) |
-                    Q(provider__user__username__icontains=search) |
-                    Q(issue_description__icontains=search) |
-                    Q(status__icontains=search)
-                )
+            try:
+                days = int(days)
+                if days < 1:
+                    days = 7
+            except ValueError:
+                days = 7
+
+            now = timezone.now()
+            date_threshold = now - timedelta(days=days)
+
+            appointments = Appointment.objects.filter(
+                created_at__gte=date_threshold
+            ).order_by("-created_at")
+
             total_count = appointments.count()
             start = (page - 1) * limit
             end = start + limit
@@ -916,9 +925,7 @@ class RecentAppointmentsView(APIView):
                 many=True
             )
 
-            total_pages = (
-                                  total_count + limit - 1
-                          ) // limit
+            total_pages = (total_count + limit - 1) // limit
 
             return Response(
                 {
@@ -926,6 +933,9 @@ class RecentAppointmentsView(APIView):
                     'count': total_count,
                     'total_pages': total_pages,
                     'current_page': page,
+                    'days_filtered': days,
+                    'date_from': date_threshold.strftime('%Y-%m-%d %H:%M:%S'),
+                    'date_to': now.strftime('%Y-%m-%d %H:%M:%S'),
                     'data': serializer.data
                 }, status=status.HTTP_200_OK
             )
@@ -936,3 +946,55 @@ class RecentAppointmentsView(APIView):
                     'message': "Appointment not found."
                 }, status=status.HTTP_404_NOT_FOUND
             )
+        except Exception as e:
+            return Response(
+                {
+                    'status': False,
+                    'message': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# views.py
+class DashboardChartDataView(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request):
+        try:
+            days = int(request.GET.get('days', 7))
+            end_date = timezone.now()
+            start_date = end_date - timedelta(days=days)
+
+            # Daily appointments
+            daily_appointments = (
+                Appointment.objects
+                .filter(created_at__gte=start_date, created_at__lte=end_date)
+                .annotate(date=TruncDate('created_at'))
+                .values('date')
+                .annotate(count=Count('id'))
+                .order_by('date')
+            )
+
+            appointment_dict = {item['date']: item['count'] for item in daily_appointments}
+
+            date_list = []
+            current_date = start_date.date()
+            while current_date <= end_date.date():
+                date_list.append(current_date)
+                current_date += timedelta(days=1)
+
+            labels = [date.strftime('%a') for date in date_list]  # Mon, Tue, Wed, etc.
+            data = [appointment_dict.get(date, 0) for date in date_list]
+
+            return Response({
+                'status': True,
+                'appointment_chart': {
+                    'labels': labels,
+                    'data': data
+                }
+            }, status=200)
+
+        except Exception as e:
+            return Response({
+                'status': False,
+                'message': str(e)
+            }, status=500)
