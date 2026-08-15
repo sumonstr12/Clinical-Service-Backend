@@ -358,7 +358,25 @@ class CreateAppointmentView(APIView):
         serializer = AppointmentSerializer(data=data)
 
         if serializer.is_valid():
-            if patient:
+            if patient and caregiver:
+                appointment = serializer.save(patient=patient, caregiver=caregiver)
+
+                print("PATIENT USER:", patient.user)
+                print("CAREGIVER USER:", caregiver.user)
+
+
+                users = []
+                users.append(patient.user)
+                users.append(caregiver.user)
+                print("USERS:", users)
+
+                create_notification(
+                    "Appointment Confirmed!",
+                    f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
+                    users
+                )
+
+            else:
                 appointment = serializer.save(patient=patient)
 
                 user = patient.user
@@ -366,20 +384,6 @@ class CreateAppointmentView(APIView):
                     "Appointment Confirmed!",
                     f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
                     user
-                )
-
-
-            else:
-                appointment = serializer.save(patient=patient, caregiver=caregiver)
-
-                users = []
-                users.append(patient.user)
-                users.append(caregiver.user)
-
-                create_notification(
-                    "Appointment Confirmed!",
-                    f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
-                    users
                 )
 
 
