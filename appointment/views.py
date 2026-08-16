@@ -2,6 +2,8 @@ from logging import exception
 
 from django.shortcuts import render
 
+from Utilis.send_email import send_email
+from Utilis.templates import appointment_template
 from users.models import *
 from .models import *
 from .serializers import *
@@ -376,6 +378,29 @@ class CreateAppointmentView(APIView):
                     users
                 )
 
+                for user in users:
+                    if not patient.user.email and not caregiver.user.email:
+                        continue
+
+                    html = appointment_template(
+                        user_name=patient.user.full_name,
+                        doctor=doctor.user.full_name,
+                        date=date,
+                        time=formatted_time
+                    )
+                    if user == patient.user:
+                        send_email(
+                            to_email=patient.user.email,
+                            subject="Appointment Confirmed",
+                            html=html,
+                        )
+                    else:
+                        send_email(
+                            to_email=caregiver.user.email,
+                            subject="Appointment Confirmed",
+                            html=html,
+                        )
+
             else:
                 appointment = serializer.save(patient=patient)
 
@@ -385,6 +410,22 @@ class CreateAppointmentView(APIView):
                     f"Your appointment with {doctor.user.full_name} is set for {date} at {formatted_time}.",
                     user
                 )
+
+                html = appointment_template(
+                    user_name=patient.user.full_name,
+                    doctor=doctor.user.full_name,
+                    date=date,
+                    time=formatted_time
+                )
+
+                if patient.user.email:
+                    send_email(
+                        to_email=patient.user.email,
+                        subject="Appointment Confirmed",
+                        html=html,
+                    )
+
+                    print("Done!")
 
 
 
