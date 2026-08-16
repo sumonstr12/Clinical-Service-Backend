@@ -4,6 +4,7 @@ from django.contrib.auth.models import update_last_login
 from django.shortcuts import render
 from rest_framework.views import APIView
 
+from Utilis.templates import registration_template, caregiver_request_approval_template, send_otp_template
 from appointment.models import Appointment
 from .models import User
 from .serializers import *
@@ -24,6 +25,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model, authenticate
 
 from rest_framework_simplejwt.views import TokenRefreshView
+from Utilis.send_email import send_email
 
 # Create your views here.
 
@@ -81,10 +83,16 @@ class TempoDataStoredView(APIView):
         
         cache.set(f"otp_limit_{email}", True, timeout=60)
 
-        # send email
-        # send_mail(...)
+        html = send_otp_template(
+            otp_code=otp
+        )
 
-        print(otp)
+        send_email(
+            to_email=email,
+            subject="OTP for registration",
+            html=html
+        )
+
 
         response =  Response({
             "status": True,
@@ -112,7 +120,6 @@ class UserRegistrationView(APIView):
 
         email = request.COOKIES.get("email")
         # email = request.data.get("email")
-        print(f"email: {email}")
         if not email:
             return Response(
                 {"status": False, "message": "Session expired"},
@@ -120,7 +127,6 @@ class UserRegistrationView(APIView):
             )
 
         temp_user = cache.get(f"user_data_{email}")
-        print(f"Temp_user{temp_user}")
         if not temp_user:
             return Response(
                 {"status": False, "message": "OTP expired"},
@@ -138,7 +144,16 @@ class UserRegistrationView(APIView):
                         user = serializer.save()
 
                     cache.delete(f"user_data_{email}")
-                    print("Done")
+
+                    html = registration_template(
+                        user_name=user.full_name
+                    )
+                    if user.email:
+                        send_email(
+                            to_email=user.email,
+                            subject="Welcome to Medicare.",
+                            html=html
+                        )
                     return Response(
                         {
                             "status": True,
@@ -435,7 +450,6 @@ class CaregiverRequestApprovalView(APIView):
             )
         
         patient = User.objects.filter(email=patient_email, role="PATIENT").exists()
-        # print(patient)
         if not patient:
             return Response(
                 {
@@ -444,7 +458,6 @@ class CaregiverRequestApprovalView(APIView):
                 },status=status.HTTP_400_BAD_REQUEST
             )
 
-        print(request.user)
         caregiver_id = request.data.get("caregiver_id")
         if not caregiver_id:
             caregiver_id = request.user.id
@@ -452,7 +465,6 @@ class CaregiverRequestApprovalView(APIView):
         caregiver = CareGiver.objects.get(id=caregiver_id)
         patient = Patient.objects.get(user__email = patient_email)
 
-        print(f"patient : {patient}")
         try:
             relationship = CaregiverPatientRelationship.objects.get(
                 caregiver=caregiver,
@@ -472,7 +484,6 @@ class CaregiverRequestApprovalView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST
             )
 
-        print(relationship.status)
         serializer = CaregiverRequestSerializer(
             data=request.data,
             context={"caregiver": caregiver}  
@@ -485,17 +496,16 @@ class CaregiverRequestApprovalView(APIView):
             verification_link = f"http://localhost:8000/api/verify-request/{verification.token}/"
             patient_email = verification.relationship.patient.user.email
 
-            print(verification.token)
-            print(patient_email)
-            # Send email Function -- (Build Later-)
+            html = caregiver_request_approval_template(
+                user_name=caregiver.user.full_name,
+                verification_link=verification_link
+            )
 
-            # from django.core.mail import send_mail
-            # send_mail(
-            #     subject="Caregiver Approval Request",
-            #     message=f"Click to approve caregiver request: {verification_link}",
-            #     from_email="noreply@healthcare.com",
-            #     recipient_list=[patient_email],
-            # )
+            send_email(
+                to_email=patient.user.email,
+                subject="Caregiver Request For approval",
+                html=html
+            )
 
             return Response(
                 {   
@@ -684,8 +694,18 @@ class OtpResendView(APIView):
         otp = str(random.randint(100000, 999999))
         cache.delete(f'user_data_{email}')
         temp_user['otp'] = otp
-        print(otp)
+
         cache.set(f"user_data_{email}", temp_user, timeout=300)
+
+        html = send_otp_template(
+            otp_code=otp
+        )
+
+        send_email(
+            to_email=email,
+            subject="OTP for registration",
+            html=html
+        )
 
         return Response(
             {
