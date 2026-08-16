@@ -4,6 +4,9 @@ django-extensions
 djangorestframework-simplejwt
 django-redis
 django-filter
+resend
+python-dotenv
+requests #requests python-decouple
 
 
 # sumon

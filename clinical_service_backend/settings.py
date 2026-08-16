@@ -2,6 +2,9 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e^hqvg-xndfr!gl6*v97f^4t_t7pr65#a9$ga%t@u($h7yyq4c'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -53,6 +56,7 @@ INSTALLED_APPS = [
     
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'resend',
 
     "corsheaders",
 ]
